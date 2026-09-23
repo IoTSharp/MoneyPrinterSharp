@@ -39,6 +39,24 @@ video-production doctor|probe|split|key|render|verify
 video-production install-skills
 ```
 
+## C# 构建与离线验证
+
+在 PowerShell 7 中执行：
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' build .\src\VideoProduction\VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false
+& 'C:\Program Files\dotnet\dotnet.exe' run --project .\tests\VideoProduction.Tests\VideoProduction.Tests.csproj --no-restore
+& '.\src\VideoProduction\bin\Debug\net10.0\VideoProduction.exe' doctor
+```
+
+`doctor`、`probe`、`split`、`key`、`render` 和 `verify` 只处理本地素材。费用核算示例：
+
+```powershell
+& '.\src\VideoProduction\bin\Debug\net10.0\VideoProduction.exe' costs --input .\records --output .\delivery\costs.json --markdown .\delivery\costs.md
+```
+
+`costs` 按 `provider + task_id` 去重；已确认金额、未知价格和估算预留分别统计。超时任务保留为 `unknown`，不能据此再次提交付费请求。
+
 ## 示例
 
 `examples/example-project.json` 按 `Models.cs` 的 snake_case 字段给出最小清单。`examples/requests/` 只含请求结构占位值，不会触发供应商调用。先完成审计、脚本和样片确认，再由用户明确授权外部提交。
