@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 07 · 口型同步"
+  short_description: "让每段主持人动作严格对应最终旁白"
+  default_prompt: "Use $video-07-lip-sync to prepare provenance-tracked lip-synced presenter segments."

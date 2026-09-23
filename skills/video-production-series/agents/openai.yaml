@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频制作系列的步骤"
+  short_description: "从软件证据审计到视频合成、验收、成本和交付的完整流程"
+  default_prompt: "Use $video-production-series to plan and execute an evidence-based software explainer video workflow."

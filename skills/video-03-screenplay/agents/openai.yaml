@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 03 · 讲稿分镜"
+  short_description: "生成可朗读、可合成、带证据链的脚本和镜头表"
+  default_prompt: "Use $video-03-screenplay to create a Chinese narration script and evidence-linked shot list."

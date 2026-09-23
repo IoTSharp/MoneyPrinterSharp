@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 05 · 主持人素材"
+  short_description: "制作稳定的女主持人、教鞭与纯绿背景动作层"
+  default_prompt: "Use $video-05-presenter to prepare a consistent presenter layer for the explainer."

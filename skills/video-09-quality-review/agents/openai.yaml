@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 09 · 质量复核"
+  short_description: "从媒体、内容、口型和披露四面验收成片"
+  default_prompt: "Use $video-09-quality-review to independently verify this explainer video before delivery."

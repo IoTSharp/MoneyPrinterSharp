@@ -1,0 +1,47 @@
+# 本地构建输出
+bin/
+obj/
+.artifacts/
+.runs/
+.moark-budget.json
+records/
+delivery/
+assets/
+
+# 项目生成媒体和临时任务记录（示例目录除外）
+output/
+renders/
+media/
+tmp/
+*.partial
+*.webm
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+
+# 供应商任务/凭据/下载缓存
+secrets/
+credentials/
+*.key
+*.pem
+*.pfx
+*.token
+task-records/
+downloads/
+
+# 本地 IDE 与系统文件
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+
+# 保留无秘密的可复现示例
+!examples/
+!examples/**

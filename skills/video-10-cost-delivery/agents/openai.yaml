@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 10 · 成本与交付"
+  short_description: "对账去重并整理可复现、可披露的最终交付包"
+  default_prompt: "Use $video-10-cost-delivery to reconcile generation costs and assemble the final delivery package."

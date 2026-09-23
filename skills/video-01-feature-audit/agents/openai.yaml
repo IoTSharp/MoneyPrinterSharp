@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 01 · 功能审计"
+  short_description: "从源码和页面建立可追溯功能证据"
+  default_prompt: "Use $video-01-feature-audit to audit this software for an evidence-backed explainer video."

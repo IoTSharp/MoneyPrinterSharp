@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 02 · 叙事规划"
+  short_description: "把功能证据组织成受众可理解的工作流"
+  default_prompt: "Use $video-02-narrative-plan to turn an audited feature list into a concise explainer narrative."

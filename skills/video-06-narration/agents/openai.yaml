@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 06 · 旁白"
+  short_description: "按最终讲稿生成可核对的分段中文配音"
+  default_prompt: "Use $video-06-narration to create measured, script-matched Chinese narration assets."

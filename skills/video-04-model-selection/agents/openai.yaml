@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 04 · 模型选型"
+  short_description: "核验模型能力、边界、费用与备用路径"
+  default_prompt: "Use $video-04-model-selection to compare verified media model options for this video."

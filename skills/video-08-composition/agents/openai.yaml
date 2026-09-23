@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频 08 · 透明合成"
+  short_description: "把主持人、任务栏、界面、字幕和音频合成为成片"
+  default_prompt: "Use $video-08-composition to composite the verified presenter layer with real software screens."
