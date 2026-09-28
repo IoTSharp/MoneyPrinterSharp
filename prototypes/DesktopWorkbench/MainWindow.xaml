@@ -1,0 +1,67 @@
+<Window x:Class="DesktopWorkbench.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="MoneyPrinter# · 工作台原型" Width="1360" Height="840" MinWidth="760" MinHeight="620" Background="{StaticResource CanvasBrush}" FontFamily="Microsoft YaHei UI" FontSize="13" WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" BorderBrush="#D8E1E1" BorderThickness="0,0,0,1" Padding="12,8">
+      <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="NavigationButton" Content="☰" Click="NavigationButton_Click" ToolTip="显示或隐藏项目导航" Width="38"/>
+          <TextBlock Text="MoneyPrinter#" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,16,0"/>
+          <TextBlock x:Name="ProjectTitle" Text="未命名项目" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="画幅" VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <ComboBox x:Name="AspectBox" Width="105" SelectedIndex="0" SelectionChanged="AspectBox_SelectionChanged"><ComboBoxItem Content="16:9"/><ComboBoxItem Content="9:16"/></ComboBox>
+          <Button Content="导出" Click="ExportButton_Click" Margin="10,2,2,2"/>
+        </StackPanel>
+        <ComboBox x:Name="ScenarioBox" Grid.Column="3" Width="136" Margin="12,0,0,0" SelectionChanged="ScenarioBox_SelectionChanged" ToolTip="原型走查场景">
+          <ComboBoxItem Content="空项目"/><ComboBoxItem Content="制作中"/><ComboBoxItem Content="任务失败"/><ComboBoxItem Content="预算耗尽"/><ComboBoxItem Content="模型未知"/><ComboBoxItem Content="导出完成"/><ComboBoxItem Content="窄窗口"/>
+        </ComboBox>
+      </Grid>
+    </Border>
+    <Grid x:Name="MainGrid">
+      <Grid.ColumnDefinitions><ColumnDefinition x:Name="NavigationColumn" Width="232"/><ColumnDefinition x:Name="LeftSplitterColumn" Width="5"/><ColumnDefinition x:Name="ChatColumn" Width="380" MinWidth="270"/><ColumnDefinition x:Name="RightSplitterColumn" Width="5"/><ColumnDefinition x:Name="WorkspaceColumn" Width="*" MinWidth="380"/></Grid.ColumnDefinitions>
+      <Border x:Name="NavigationPanel" Background="#E9EEEE" BorderBrush="#D8E1E1" BorderThickness="0,0,1,0" Padding="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top">
+            <DockPanel><TextBlock Text="项目" FontWeight="SemiBold" VerticalAlignment="Center"/><Button DockPanel.Dock="Right" Content="＋" Width="34" ToolTip="新建项目" Click="NewProjectButton_Click"/></DockPanel>
+            <ListBox x:Name="ProjectList" Height="64" SelectionChanged="ProjectList_SelectionChanged"><ListBoxItem Content="产品讲解演示"/></ListBox>
+            <DockPanel Margin="0,18,0,4"><TextBlock Text="制作会话" FontWeight="SemiBold" VerticalAlignment="Center"/><Button DockPanel.Dock="Right" Content="＋" Width="34" ToolTip="新建会话" Click="NewSessionButton_Click"/></DockPanel>
+            <ListBox x:Name="SessionList" Height="108" SelectionChanged="SessionList_SelectionChanged"><ListBoxItem Content="主版本"/><ListBoxItem Content="竖屏版本"/></ListBox>
+            <TextBlock Text="技能" FontWeight="SemiBold" Margin="0,18,0,6"/>
+          </StackPanel>
+          <ListBox x:Name="SkillList" SelectionChanged="SkillList_SelectionChanged">
+            <ListBoxItem Content="01 功能审计"/><ListBoxItem Content="02 叙事规划"/><ListBoxItem Content="03 讲稿分镜"/><ListBoxItem Content="04 模型选择"/><ListBoxItem Content="05 主持人"/><ListBoxItem Content="06 旁白"/><ListBoxItem Content="07 口型"/><ListBoxItem Content="08 合成"/><ListBoxItem Content="09 质量复核"/><ListBoxItem Content="10 费用交付"/>
+          </ListBox>
+        </DockPanel>
+      </Border>
+      <GridSplitter x:Name="LeftSplitter" Grid.Column="1" Width="5" Background="#D8E1E1" HorizontalAlignment="Stretch"/>
+      <Grid Grid.Column="2" Background="{StaticResource SurfaceBrush}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Border BorderBrush="#D8E1E1" BorderThickness="0,0,0,1" Padding="14,12"><StackPanel><TextBlock Text="AI 制作会话" FontWeight="SemiBold" FontSize="15"/><TextBlock x:Name="SessionSubtitle" Text="主版本" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"/></StackPanel></Border>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="Conversation" Margin="14,14,14,8"/></ScrollViewer>
+        <Border Grid.Row="2" BorderBrush="#D8E1E1" BorderThickness="0,1,0,0" Padding="12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="PromptBox" MinHeight="68" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" ToolTip="输入制作指令"/><Button Grid.Column="1" Content="发送" VerticalAlignment="Bottom" Click="SendButton_Click"/></Grid></Border>
+      </Grid>
+      <GridSplitter Grid.Column="3" Width="5" Background="#D8E1E1" HorizontalAlignment="Stretch"/>
+      <Grid Grid.Column="4">
+        <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="210"/><RowDefinition Height="5"/><RowDefinition Height="*" MinHeight="260"/></Grid.RowDefinitions>
+        <Grid Background="#1C292C"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <Grid Margin="14,10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="预览" Foreground="White" FontWeight="SemiBold"/><TextBlock x:Name="PreviewStatus" Grid.Column="1" Foreground="#C5DEDC" HorizontalAlignment="Stretch" TextAlignment="Right" TextTrimming="CharacterEllipsis" Margin="0,0,16,0"/></Grid>
+          <Border Grid.Row="1" x:Name="PreviewFrame" Background="#F7F9F9" Margin="28,4" BorderBrush="#46585C" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="390" Height="220">
+            <Grid><Grid.RowDefinitions><RowDefinition Height="28"/><RowDefinition Height="*"/><RowDefinition Height="28"/></Grid.RowDefinitions>
+              <Border Background="#D9E8E6" Padding="8,4"><TextBlock Text="MPS 演示界面" FontSize="11"/></Border>
+              <Grid Grid.Row="1" Margin="12"><Grid.ColumnDefinitions><ColumnDefinition Width="95"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Background="#E5EBEB"/><StackPanel Grid.Column="1" Margin="12,4"><TextBlock Text="演示项目" FontWeight="SemiBold"/><Border Height="15" Background="#D2DCDB" Margin="0,12,30,0"/><Border Height="15" Background="#C0D5D1" Margin="0,8,65,0"/><Border Height="15" Background="#DEE5E4" Margin="0,8,48,0"/></StackPanel></Grid>
+              <Border Grid.Row="2" Background="#E9F0EF" Padding="8,4"><TextBlock x:Name="PreviewCaption" Text="字幕预览" FontSize="11" HorizontalAlignment="Center"/></Border>
+            </Grid>
+          </Border>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="12,4,12,10"><Button Content="▶" Width="38" ToolTip="播放或暂停预览" Click="PlayButton_Click"/><TextBlock x:Name="TimecodeText" Text="00:00 / 00:30" Foreground="White" VerticalAlignment="Center" Margin="8,0"/></StackPanel>
+        </Grid>
+        <GridSplitter Grid.Row="1" Height="5" Background="#D8E1E1" HorizontalAlignment="Stretch"/>
+        <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <DockPanel Margin="10,8"><TextBlock Text="时间线" FontWeight="SemiBold" VerticalAlignment="Center"/><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="↶" Width="34" ToolTip="撤销" Click="UndoButton_Click"/><Button Content="✂" Width="34" ToolTip="分割片段" Click="SplitButton_Click"/><Button Content="裁切" ToolTip="裁切片段末尾一秒" Click="TrimButton_Click"/><Button Content="←" Width="34" ToolTip="片段左移一秒" Click="MoveLeftButton_Click"/><Button Content="→" Width="34" ToolTip="片段右移一秒" Click="MoveRightButton_Click"/></StackPanel></DockPanel>
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"><Canvas x:Name="TimelineCanvas" Width="940" Height="264" Background="#F7F9F9"/></ScrollViewer>
+          <TextBlock x:Name="TimelineStatus" Grid.Row="2" Foreground="{StaticResource MutedBrush}" Text="选择片段可编辑" Margin="12,6"/>
+        </Grid>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</Window>

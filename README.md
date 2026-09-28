@@ -11,7 +11,7 @@
 [![FFmpeg](https://img.shields.io/badge/媒体管线-FFmpeg-007808.svg)](https://ffmpeg.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**MPS / MP#** · [GitHub](https://github.com/IoTSharp/MoneyPrinterSharp) · [文档](docs/README.md)
+**MPS / MP#** · [GitHub](https://github.com/IoTSharp/MoneyPrinterSharp) · [文档](docs/README.md) · [路线图](ROADMAP.md) · [变更日志](CHANGELOG.md)
 
 </div>
 

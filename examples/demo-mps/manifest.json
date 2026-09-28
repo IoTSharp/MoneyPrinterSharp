@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "title": "MPS 无敏感媒体回归样本",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "taskbar_height": 56,
+  "audio_rate": 1,
+  "target_seconds": 4,
+  "presenter": {
+    "center_x": 1120,
+    "height": 370,
+    "feet_y": 0.96,
+    "key_color": "0x50B470",
+    "similarity": 0.2,
+    "blend": 0.08
+  },
+  "scenes": [
+    {
+      "id": "demo",
+      "title": "合成界面",
+      "screen": "assets/screen-zh.png",
+      "audio": "assets/tone.wav",
+      "narration": "占位音调，不是实际旁白。",
+      "evidence": "本仓库 DemoAssets 合成界面；非真实软件功能证据。",
+      "audio_rate": null,
+      "clips": [
+        {
+          "video": "assets/presenter-placeholder.mp4",
+          "offset": 0,
+          "duration": 4,
+          "lip_synced": false
+        }
+      ],
+      "captions": [
+        {
+          "start": 0,
+          "end": 2,
+          "text": "示例软件界面"
+        },
+        {
+          "start": 2,
+          "end": 4,
+          "text": "Sample App interface"
+        }
+      ]
+    }
+  ]
+}

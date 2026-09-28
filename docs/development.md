@@ -1,6 +1,6 @@
 # MoneyPrinter# 开发交接
 
-展示名为 MoneyPrinter#，简称 MPS / MP#。GitHub 主仓库为 [IoTSharp/MoneyPrinterSharp](https://github.com/IoTSharp/MoneyPrinterSharp)，本机独立目录为 `D:\Uixe\MoneyPrinterSharp`。`origin` 指向 GitHub，`gitee` 保留原技能仓库地址；后续开发在这个独立项目中继续。
+展示名为 MoneyPrinter#，简称 MPS / MP#。GitHub 主仓库为 [IoTSharp/MoneyPrinterSharp](https://github.com/IoTSharp/MoneyPrinterSharp)；原 Gitee 仓库保留迁移前历史。后续开发在本独立仓库中继续。
 
 ## 当前结构
 
