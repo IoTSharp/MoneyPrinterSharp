@@ -1,70 +1,128 @@
+<div align="center">
+
+<img src="assets/logo.svg" alt="MoneyPrinter# logo" width="128" />
+
 # MoneyPrinter#
 
-**MoneyPrinter#**（简称 **MPS**、**MP#**）是用 C# 实现的软件讲解视频制作工具与技能系列。名称中的 `#` 与 C# 的命名方式一致；GitHub 仓库名和本地目录名使用 `MoneyPrinterSharp`。
+**可审计、可复现的软件讲解视频制作工具与 Codex 技能系列**
 
-仓库：[IoTSharp/MoneyPrinterSharp](https://github.com/IoTSharp/MoneyPrinterSharp)。开发入口见 [开发交接](docs/development.md)，许可证为 [MIT](LICENSE)。
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4.svg)](https://dotnet.microsoft.com/)
+[![C#](https://img.shields.io/badge/C%23-语言-239120.svg)](https://learn.microsoft.com/dotnet/csharp/)
+[![FFmpeg](https://img.shields.io/badge/媒体管线-FFmpeg-007808.svg)](https://ffmpeg.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-这是一个可复用的 Codex 技能系列，用于把软件源码和脱敏页面整理成可验证的功能讲解视频。主入口是 `video-production-series`，按需路由到十个阶段：
+**MPS / MP#** · [GitHub](https://github.com/IoTSharp/MoneyPrinterSharp) · [文档](docs/README.md)
 
-`feature-audit → narrative-plan → screenplay → model-selection → presenter → narration → lip-sync → composition → quality-review → cost-delivery`
+</div>
 
-技能不携带生产账号、业务数据、供应商密钥或固定机器路径。技能安装器会在本地技能目录创建指向本仓库的符号链接；不要复制目录，以免相对引用和更新失效。
+## 项目简介
 
-## 使用边界
+**MoneyPrinter#**（简称 **MPS** 或 **MP#**）是一个面向软件产品讲解视频的开源工具链。它以 C# / .NET 10 为核心，将源码审计、叙事规划、分镜脚本、模型选择、旁白、口型、透明合成、质量验收和费用交付组织为一套可追踪的制作流程。
 
-- 功能主张必须能追到源码、路由/API、可复现页面或脱敏素材证据。
-- 端口可达不等于视频可用；必须实际探测容器、解码帧、音轨和透明通道。
-- 图片模型只产生静态图，不能冒充动作、时序或口型同步。
-- Moark 后端按实际模型记录；Qwen、Vidu、Duix 不写成 GPT。
-- 口型片段必须由同一段最终旁白驱动；备用片段明确标记不同步。
-- Duix 单段不超过 60 秒，默认约 40 秒；五分钟以实测旁白时长为准，不用全片 1.4 倍速硬压。
-- alpha 中间件使用经探测通过的 WebM 或其他透明格式；MP4 只作为背景合成后的最终交付。
+项目的目标不是生成不可验证的宣传片，而是把软件能力转换成有证据、有记录、可复现的讲解视频。所有关键主张都应追溯到源码、路由/API、可复现页面或脱敏素材。
 
-## 目录
+## 重要说明
 
-- `skills/video-production-series/`：总入口、共享契约和命令约定。
-- `skills/video-01-feature-audit/` 至 `video-10-cost-delivery/`：阶段技能。
-- `docs/`：持续维护的契约、安装与验收说明。
-- `src/VideoProduction/`：统一 C# CLI 源码。
-- `tests/VideoProduction.Tests/`：无付费请求的离线回归验证。
+- 本项目仅提供通用工具、离线媒体管线和 Codex 技能；不包含生产账号、业务数据、供应商密钥或固定机器路径。
+- 使用外部模型、媒体服务或第三方平台时，请先阅读对应服务条款，并由使用者自行承担合规、账号和费用责任。
+- 媒体生成与模型调用可能产生第三方费用。超时任务不能直接视为失败，重复提交前应先核对已有任务和费用记录。
+- 真实素材验收应独立检查透明通道、音画时长、字幕和口型声明，基础构建或 `doctor` 检查不能替代成片验收。
 
-## CLI
+## 核心能力
 
-在 PowerShell 7 中，从已安装技能的物理目录向上两层定位仓库根，再确认 `src/VideoProduction/VideoProduction.csproj` 存在。完整命令和安全边界见总入口的 `references/cli-reference.md`。先运行 `--help`，只使用当前实现支持的参数：
+- **功能审计**：从源码、页面和 API 证据建立功能清单，区分已验证、待验证和不可声明内容。
+- **结构化创作**：依次生成叙事计划、分镜脚本和模型选择记录，保持每一步可回溯。
+- **本地媒体管线**：使用 FFmpeg / FFprobe 完成探测、切分、关键帧、渲染和验收，不依赖 Python 或 JavaScript 业务脚本。
+- **可恢复任务**：对 Moark 提交与轮询保留任务记录，支持超时恢复和取消边界。
+- **成本核算**：按 `provider + task_id` 去重，分别记录已确认金额、未知价格和估算预留。
+- **技能安装**：通过统一入口安装 11 个阶段技能，并保留相对引用和版本更新能力。
+
+## 制作流程
 
 ```text
-video-production init
-video-production features
-video-production validate
-video-production costs
-video-production credentials set|status
-video-production moark submit|poll
-video-production doctor|probe|split|key|render|verify
-video-production install-skills
+feature-audit
+      |
+      v
+narrative-plan -> screenplay -> model-selection -> presenter -> narration
+                                                        |
+                                                        v
+                         lip-sync -> composition -> quality-review -> cost-delivery
 ```
 
-## C# 构建与离线验证
+总入口位于 [`skills/video-production-series`](skills/video-production-series/)，阶段契约和 CLI 参考见 [`references`](skills/video-production-series/references/)。
 
-在 PowerShell 7 中执行：
+## 目录结构
+
+```text
+MoneyPrinterSharp/
+├── skills/                         # 总入口与 10 个阶段技能
+│   └── video-production-series/    # 共享契约、质量门和 CLI 参考
+├── src/VideoProduction/             # .NET 10 C# CLI 与 FFmpeg 管线
+├── tests/VideoProduction.Tests/     # 无付费请求的离线回归测试
+├── docs/                            # 安装、工作流、媒体和费用文档
+├── assets/                          # 项目与赞助商公开门面资源
+└── LICENSE                          # MIT License
+```
+
+## 快速开始
+
+### 环境要求
+
+- Windows + PowerShell 7 或更高版本
+- .NET SDK 10
+- FFmpeg 与 FFprobe（媒体命令执行前可用 `doctor` 探测）
+
+### 构建与验证
+
+在仓库根目录执行：
 
 ```powershell
-& 'C:\Program Files\dotnet\dotnet.exe' build .\src\VideoProduction\VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false
-& 'C:\Program Files\dotnet\dotnet.exe' run --project .\tests\VideoProduction.Tests\VideoProduction.Tests.csproj --no-restore
-& '.\src\VideoProduction\bin\Debug\net10.0\VideoProduction.exe' doctor
+dotnet build .\src\VideoProduction\VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false
+dotnet run --project .\tests\VideoProduction.Tests\VideoProduction.Tests.csproj -p:UseSharedCompilation=false
+dotnet run --project .\src\VideoProduction\VideoProduction.csproj --no-build -- help
 ```
 
-`doctor`、`probe`、`split`、`key`、`render` 和 `verify` 只处理本地素材。费用核算示例：
+### 安装技能并初始化项目
 
 ```powershell
-& '.\src\VideoProduction\bin\Debug\net10.0\VideoProduction.exe' costs --input .\records --output .\delivery\costs.json --markdown .\delivery\costs.md
+dotnet run --project .\src\VideoProduction\VideoProduction.csproj -- install-skills
+dotnet run --project .\src\VideoProduction\VideoProduction.csproj -- init --project .\runs\demo --title "产品功能讲解" --minutes 5
 ```
 
-`costs` 按 `provider + task_id` 去重；已确认金额、未知价格和估算预留分别统计。超时任务保留为 `unknown`，不能据此再次提交付费请求。
+CLI 支持的主要命令包括：
 
-## 初始化制作项目
+```text
+init | features | validate | costs | credentials set|status
+moark submit|poll
+doctor | probe | split | key | render | verify
+install-skills
+```
 
-使用 `init --project <新目录> --title <视频标题> --minutes 5` 创建空白制作清单。清单字段以 `src/VideoProduction/Models.cs` 为准，JSON 使用 snake_case。完整请求样例尚待补齐；先完成审计、脚本和样片确认，再在已有授权和预算内提交外部任务。
+完整参数、产物契约和费用边界见 [`CLI 参考`](skills/video-production-series/references/cli-reference.md)、[`安装说明`](docs/installation.md) 和 [`开发交接`](docs/development.md)。
 
-## 验证
+## 赞助商
 
-技能校验器只检查 frontmatter、命名和未完成脚手架占位符；它不代替实际媒体验收。完成技能修改后，应对每个技能运行 `quick_validate.py`，并对 CLI 做无网络、无凭据的帮助/验证检查。
+感谢 [Sonnet](https://sonnet.vip) 对 MoneyPrinter# 开源项目的赞助支持。Sonnet 的详细服务信息请访问 [sonnet.vip](https://sonnet.vip)。
+
+<table>
+<tr>
+<td width="180"><a href="https://sonnet.vip"><img src="assets/sponsors/sonnet.svg" alt="Sonnet" width="150"></a></td>
+<td><strong>Sonnet</strong><br/>感谢 Sonnet 支持开源软件讲解视频工具链的持续维护与公开协作。点击 logo 访问 <a href="https://sonnet.vip">sonnet.vip</a>。</td>
+</tr>
+</table>
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE) 发布。除非许可证另有明确规定，软件按“现状”提供，不附带任何明示或默示担保。
+
+Copyright (c) 2026 IoTSharp
+
+## 致谢
+
+感谢 .NET、FFmpeg 以及所有参与问题反馈、文档改进和测试验证的开源社区成员。
+
+<div align="center">
+
+**如果 MoneyPrinter# 对你有帮助，欢迎在 GitHub 上点亮 Star。**
+
+</div>

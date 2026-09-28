@@ -23,6 +23,12 @@ tmp/
 *.jpg
 *.jpeg
 
+# 开源项目门面资源
+!assets/
+!assets/logo.svg
+!assets/sponsors/
+!assets/sponsors/sonnet.svg
+
 # 供应商任务/凭据/下载缓存
 secrets/
 credentials/

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-labelledby="title desc">
+  <title id="title">Sonnet</title>
+  <desc id="desc">Sonnet sponsor logo for sonnet.vip.</desc>
+  <defs>
+    <linearGradient id="sonnet-mark" x1="46" y1="42" x2="152" y2="174" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8CF7C7"/>
+      <stop offset="0.52" stop-color="#4EDAE7"/>
+      <stop offset="1" stop-color="#FFC857"/>
+    </linearGradient>
+    <filter id="sonnet-shadow" x="-25%" y="-25%" width="150%" height="165%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#020617" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="584" height="204" rx="34" fill="#0C1422"/>
+  <rect x="8.75" y="8.75" width="582.5" height="202.5" rx="33.25" fill="none" stroke="#CBD5E1" stroke-opacity="0.2" stroke-width="1.5"/>
+  <g filter="url(#sonnet-shadow)" fill="none" stroke="url(#sonnet-mark)" stroke-linecap="round" stroke-width="18">
+    <path d="M127 58C111 40 78 40 66 57C53 75 66 91 96 101C126 111 139 127 126 145C113 163 80 164 61 145"/>
+    <path d="M66 57L53 43M126 145L139 159" stroke="#FFC857" stroke-width="8"/>
+  </g>
+  <text x="188" y="126" fill="#F8FAFC" font-family="Inter, Segoe UI, sans-serif" font-size="70" font-weight="700" letter-spacing="1">sonnet</text>
+  <text x="192" y="167" fill="#9AAAC0" font-family="Inter, Segoe UI, sans-serif" font-size="24" font-weight="500" letter-spacing="2">SONNET.VIP</text>
+</svg>
