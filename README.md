@@ -1,4 +1,8 @@
-# 视频制作系列的步骤
+# MoneyPrinter#
+
+**MoneyPrinter#**（简称 **MPS**、**MP#**）是用 C# 实现的软件讲解视频制作工具与技能系列。名称中的 `#` 与 C# 的命名方式一致；GitHub 仓库名和本地目录名使用 `MoneyPrinterSharp`。
+
+仓库：[IoTSharp/MoneyPrinterSharp](https://github.com/IoTSharp/MoneyPrinterSharp)。开发入口见 [开发交接](docs/development.md)，许可证为 [MIT](LICENSE)。
 
 这是一个可复用的 Codex 技能系列，用于把软件源码和脱敏页面整理成可验证的功能讲解视频。主入口是 `video-production-series`，按需路由到十个阶段：
 
@@ -21,8 +25,8 @@
 - `skills/video-production-series/`：总入口、共享契约和命令约定。
 - `skills/video-01-feature-audit/` 至 `video-10-cost-delivery/`：阶段技能。
 - `docs/`：持续维护的契约、安装与验收说明。
-- `examples/`：不含密钥和生产数据的项目及请求样例。
 - `src/VideoProduction/`：统一 C# CLI 源码。
+- `tests/VideoProduction.Tests/`：无付费请求的离线回归验证。
 
 ## CLI
 
@@ -57,9 +61,9 @@ video-production install-skills
 
 `costs` 按 `provider + task_id` 去重；已确认金额、未知价格和估算预留分别统计。超时任务保留为 `unknown`，不能据此再次提交付费请求。
 
-## 示例
+## 初始化制作项目
 
-`examples/example-project.json` 按 `Models.cs` 的 snake_case 字段给出最小清单。`examples/requests/` 只含请求结构占位值，不会触发供应商调用。先完成审计、脚本和样片确认，再由用户明确授权外部提交。
+使用 `init --project <新目录> --title <视频标题> --minutes 5` 创建空白制作清单。清单字段以 `src/VideoProduction/Models.cs` 为准，JSON 使用 snake_case。完整请求样例尚待补齐；先完成审计、脚本和样片确认，再在已有授权和预算内提交外部任务。
 
 ## 验证
 

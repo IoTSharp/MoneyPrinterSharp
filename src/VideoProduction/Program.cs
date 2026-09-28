@@ -97,7 +97,7 @@ public static class Program
     /// <summary>输出所有阶段的可复制命令和安全边界。</summary>
     private static void PrintHelp()
     {
-        Console.WriteLine("视频制作系列（C# / .NET 10）\n");
+        Console.WriteLine("MoneyPrinter#（MPS / MP#）— 视频制作系列（C# / .NET 10）\n");
         Console.WriteLine("  init --project DIR --title TITLE --minutes 5");
         Console.WriteLine("  features --source SOFTWARE --output planning/features.json");
         Console.WriteLine("  validate --manifest PROJECT/manifest.json [--draft]");
