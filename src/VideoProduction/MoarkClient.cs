@@ -62,15 +62,10 @@ public static class MoarkClient
             }
             using (response)
             {
-                record.HttpStatus = response.StatusCode;
-                ApplyPrice(record, response.Document.RootElement, response.InferenceCost);
-                var taskId = SafeTaskId(response.Document.RootElement, credential);
-                if (taskId is not null) record.TaskId = taskId;
+                ProviderResponsePolicy.ApplySubmission(record, response, credential);
                 if (!response.IsSuccess)
                 {
                     // 4xx 为明确拒绝；5xx 或重定向仍可能已创建付费任务，继续占用预算。
-                    record.Status = response.StatusCode is >= 400 and < 500 ? "rejected" : "unknown";
-                    record.ErrorCode = "submit_http_" + response.StatusCode.ToString(CultureInfo.InvariantCulture);
                     await PersistAfterSubmissionAsync(recordPath, record);
                     Print(record, "提交未正常完成，未自动重试。");
                     return record.Status == "rejected" ? 3 : 2;
@@ -99,12 +94,6 @@ public static class MoarkClient
                         return 2;
                     }
                 }
-                else if (record.TaskId is null)
-                {
-                    record.Status = "unknown";
-                    record.ErrorCode = "accepted_without_task_id";
-                }
-                else record.Status = NormalizeStatus(response.Document.RootElement) ?? "accepted";
                 await PersistAfterSubmissionAsync(recordPath, record);
                 Print(record, kind == "image" ? "同步图片已保存。" : "任务已记录；使用 poll 继续查询。");
                 return record.Status is "failure" or "cancelled" ? 3 : record.Status == "unknown" ? 2 : 0;
@@ -141,18 +130,13 @@ public static class MoarkClient
             {
                 deadline.Token.ThrowIfCancellationRequested();
                 using var response = await ProviderTransport.GetTaskAsync(record.TaskId, credential, false, deadline.Token);
+                ProviderResponsePolicy.ApplyPoll(record, response, credential);
                 if (!response.IsSuccess)
                 {
-                    record.ErrorCode = "poll_http_" + response.StatusCode.ToString(CultureInfo.InvariantCulture);
                     await PersistAfterSubmissionAsync(path, record);
                     Console.Error.WriteLine($"查询 HTTP {response.StatusCode}，保留原任务状态。");
                     return 2;
                 }
-                var returnedId = SafeTaskId(response.Document.RootElement, credential);
-                if (returnedId is not null && returnedId != record.TaskId) throw new InvalidDataException("任务查询响应编号不匹配。");
-                ApplyPrice(record, response.Document.RootElement, response.InferenceCost);
-                record.Status = NormalizeStatus(response.Document.RootElement) ?? "pending";
-                record.ErrorCode = record.Status == "failure" ? "provider_task_failed" : null;
                 await PersistAsync(path, record, deadline.Token);
                 Console.Error.WriteLine($"Moark {record.Kind}: {record.Status}，查询 {index + 1}/{attempts}。");
                 if (record.Status == "success")
@@ -300,41 +284,6 @@ public static class MoarkClient
         if (record.TaskId is not null) ProviderTransport.ValidateTaskId(record.TaskId);
     }
 
-    /// <summary>解析已知状态，统一 failed/failure，未知内容不直接进入持久记录。</summary>
-    private static string? NormalizeStatus(JsonElement body)
-    {
-        var value = Text(body, "status");
-        return value?.ToLowerInvariant() switch
-        {
-            "success" or "succeeded" or "completed" => "success",
-            "failure" or "failed" => "failure",
-            "cancelled" or "canceled" => "cancelled",
-            "accepted" => "accepted",
-            "waiting" or "queued" or "pending" or "in_progress" or "running" or "processing" => "pending",
-            _ => null
-        };
-    }
-
-    /// <summary>只保留数字费用和允许的币种；价格缺失或 null 时保留原有未知状态。</summary>
-    private static void ApplyPrice(ProviderRecord record, JsonElement body, decimal? headerCost)
-    {
-        if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("price", out var price) && price.ValueKind == JsonValueKind.Number && price.TryGetDecimal(out var amount) && amount is >= 0 and <= 1000000)
-        {
-            record.Price = amount;
-            record.Currency = Text(body, "currency")?.ToUpperInvariant() switch { "CNY" => "CNY", "USD" => "USD", _ => "UNKNOWN" };
-        }
-        else if (headerCost is >= 0 and <= 1000000) { record.Price = headerCost; record.Currency = "CNY"; }
-    }
-
-    /// <summary>只接受格式有效且未回显密钥的任务编号。</summary>
-    private static string? SafeTaskId(JsonElement body, string credential)
-    {
-        var value = Text(body, "task_id");
-        if (value is null || value.Contains(credential, StringComparison.Ordinal)) return null;
-        try { ProviderTransport.ValidateTaskId(value); return value; }
-        catch (InvalidDataException) { return null; }
-    }
-
     /// <summary>只按已经实测的输出结构取首个媒体地址，不递归遍历任意供应商字段。</summary>
     private static string? FindOutputUrl(JsonElement output)
     {
@@ -394,7 +343,7 @@ public static class MoarkClient
     }
 
     /// <summary>只输出用途、状态、编号及费用，不输出服务商原始响应或请求正文。</summary>
-    private static void Print(ProviderRecord record, string message)
+    internal static void Print(ProviderRecord record, string message)
     {
         Console.WriteLine(JsonSerializer.Serialize(new { record.Kind, record.Model, record.TaskId, record.Status, record.Price, record.Currency, record.EstimateCny, record.LocalOutput, message }, JsonFiles.Options));
     }

@@ -6,13 +6,18 @@ namespace VideoProductionTests;
 public static class Program
 {
     /// <summary>执行有限数量的领域断言，失败时返回非零代码。</summary>
-    public static int Main()
+    public static async Task<int> Main()
     {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        ConsoleCancelEventHandler cancel = (_, args) => { args.Cancel = true; deadline.Cancel(); };
+        Console.CancelKeyPress += cancel;
         try
         {
             CostDeduplicatesTaskIds();
             CostSeparatesUnknownAndEstimates();
             ManifestRejectsFalseLipSyncAndBadCaptionOrder();
+            await SecurityContractTests.RunAsync(deadline.Token);
             Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界。");
             return 0;
         }
@@ -21,6 +26,7 @@ public static class Program
             Console.Error.WriteLine("测试失败：" + error.Message);
             return 1;
         }
+        finally { Console.CancelKeyPress -= cancel; }
     }
 
     /// <summary>同一供应商任务在嵌套记录中出现两次也只能计算一次。</summary>

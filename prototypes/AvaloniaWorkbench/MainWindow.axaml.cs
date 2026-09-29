@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 
 namespace Mps.AvaloniaWorkbench;
@@ -36,10 +35,13 @@ public partial class MainWindow : Window
     }
 
     /// <summary>执行无需网络的状态与片段操作烟测。</summary>
-    public void RunSmoke()
+    public void RunSmoke(CancellationToken cancellationToken = default)
     {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(TimeSpan.FromSeconds(15));
         for (var state = 0; state < 7; state++)
         {
+            limit.Token.ThrowIfCancellationRequested();
             ScenarioBox.SelectedIndex = state;
             if (ScenarioBox.SelectedIndex != state)
                 throw new InvalidOperationException($"场景切换失败：{state}");
@@ -52,18 +54,26 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("竖屏预览画幅错误");
         Landscape_Click(null, new RoutedEventArgs());
         selectedClipId = clips[0].Id;
-        var initial = clips.Count;
+        var initial = clips.ToArray();
         SplitSelectedClip();
-        if (clips.Count != initial + 1)
-            throw new InvalidOperationException("分割未生成新片段");
+        if (clips.Count != initial.Length + 1 || clips[0].Duration + clips[1].Duration != initial[0].Duration ||
+            clips[1].Start != clips[0].Start + clips[0].Duration)
+            throw new InvalidOperationException("分割未保持连续时间范围");
         MoveSelectedClip(1);
+        if (clips[0].Start != initial[0].Start + 1)
+            throw new InvalidOperationException("片段移动没有改变位置");
+        var beforeTrim = clips[0].Duration;
+        TrimSelectedClip();
+        if (clips[0].Duration != beforeTrim - 1)
+            throw new InvalidOperationException("片段裁短没有改变时长");
         UndoEdit();
         UndoEdit();
-        if (clips.Count != initial)
-            throw new InvalidOperationException("撤销未恢复片段数量");
+        UndoEdit();
+        if (!clips.SequenceEqual(initial))
+            throw new InvalidOperationException("撤销未恢复完整片段状态");
         SwitchSession(1);
-        if (currentSession != 1)
-            throw new InvalidOperationException("会话切换失败");
+        if (currentSession != 1 || !clips.SequenceEqual(initial))
+            throw new InvalidOperationException("会话切换未保持共享时间线");
         Width = 820;
         Height = 680;
         ApplyLayout();
@@ -76,36 +86,8 @@ public partial class MainWindow : Window
         NewSession_Click(null, new RoutedEventArgs());
         if (CompactMenuButton.ContextMenu?.Items.OfType<MenuItem>().All(item => item.Header?.ToString() != "制作会话 3") != false)
             throw new InvalidOperationException("新会话未加入窄窗口菜单");
-    }
-
-    /// <summary>把宽、窄和最小尺寸的实际可视树保存为本地 PNG。</summary>
-    public void CaptureSnapshots()
-    {
-        CaptureSnapshot(1360, 840, 1, "wide");
-        CaptureSnapshot(820, 680, 6, "narrow");
-        CaptureSnapshot(760, 620, 6, "minimum");
-    }
-
-    /// <summary>离屏渲染原型窗口，供布局与非空白像素检查。</summary>
-    private void CaptureSnapshot(int width, int height, int state, string name)
-    {
-        Width = width;
-        Height = height;
-        currentSession = 0;
-        SessionTitle.Text = "主版本制作";
-        PrimarySessionButton.Classes.Set("active", true);
-        VerticalSessionButton.Classes.Set("active", false);
-        selectedClipId = null;
-        ScenarioBox.SelectedIndex = state;
-        ApplyScenario(state);
-        ApplyLayout();
-        Measure(new Size(width, height));
-        Arrange(new Rect(0, 0, width, height));
-        using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
-        bitmap.Render(this);
-        var output = Path.Combine(Path.GetTempPath(), $"mps-atomui-{name}.png");
-        bitmap.Save(output, PngBitmapEncoderOptions.Default);
-        Console.WriteLine($"{name}: {output} ({width}x{height})");
+        limit.Token.ThrowIfCancellationRequested();
+        Console.WriteLine("原型烟测通过：七种状态、双画幅、片段分割/移动/裁短/完整撤销、共享会话与窄窗菜单。");
     }
 
     /// <summary>装入五条轨道上的可编辑演示片段。</summary>
@@ -214,14 +196,14 @@ public partial class MainWindow : Window
         RulerCanvas.Children.Clear();
         for (var second = 0; second <= 30; second += 5)
         {
-            var label = new TextBlock { Text = $"00:{second:00}", FontSize = 10, Foreground = Brush.Parse("#81928E") };
+            var label = new TextBlock { Text = $"00:{second:00}", FontSize = 10, Foreground = ThemeBrush("MpsSecondaryTextBrush") };
             Canvas.SetLeft(label, 14 + second * scale);
             Canvas.SetTop(label, 8);
             RulerCanvas.Children.Add(label);
         }
         for (var track = 0; track < 5; track++)
         {
-            var line = new Border { Width = width, Height = 1, Background = Brush.Parse("#E7ECEB") };
+            var line = new Border { Width = width, Height = 1, Background = ThemeBrush("MpsSubtleBorderBrush") };
             Canvas.SetTop(line, (track + 1) * 39 - 1);
             TimelineCanvas.Children.Add(line);
         }
@@ -229,7 +211,8 @@ public partial class MainWindow : Window
         {
             var color = clip.Track switch
             {
-                0 => "#BBDDD7", 1 => "#DDC9B6", 2 => "#D0DCF3", 3 => "#E8DEB6", _ => "#D9D0E8"
+                0 => "MpsScreenTrackBrush", 1 => "MpsOverlayTrackBrush", 2 => "MpsVoiceTrackBrush",
+                3 => "MpsMusicTrackBrush", _ => "MpsCaptionTrackBrush"
             };
             var item = new Border
             {
@@ -237,18 +220,18 @@ public partial class MainWindow : Window
                 Width = Math.Max(20, clip.Duration * scale - 3),
                 Height = 30,
                 CornerRadius = new CornerRadius(4),
-                Background = Brush.Parse(color),
-                BorderBrush = Brush.Parse(clip.Id == selectedClipId ? "#176B5F" : "#B7C8C5"),
+                Background = ThemeBrush(color),
+                BorderBrush = ThemeBrush(clip.Id == selectedClipId ? "MpsAccentBrush" : "MpsTrackBorderBrush"),
                 BorderThickness = new Thickness(clip.Id == selectedClipId ? 2 : 1),
                 Child = new TextBlock
                 {
                     Text = clip.Title,
                     FontSize = 10,
-                    FontWeight = FontWeight.SemiBold,
+                    FontWeight = FontWeight.Normal,
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     Margin = new Thickness(7, 0),
-                    Foreground = Brush.Parse("#263638")
+                    Foreground = ThemeBrush("MpsTextBrush")
                 }
             };
             item.PointerPressed += Clip_PointerPressed;
@@ -374,17 +357,21 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>在对话区加入本地演示消息。</summary>
+    /// <summary>从应用共享资源读取画刷，保证动态轨道与 XAML 控件使用同一套颜色。</summary>
+    private static IBrush ThemeBrush(string key) => Application.Current?.Resources[key] as IBrush
+        ?? throw new InvalidOperationException($"界面颜色资源缺失：{key}");
+
+    /// <summary>以平面段落呈现本地演示消息，避免重复卡片干扰长时间阅读。</summary>
     private void AddMessage(string message)
     {
         ConversationList.Children.Add(new Border
         {
-            Background = Brush.Parse("#FFFFFF"),
-            BorderBrush = Brush.Parse("#E1E9E7"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(13, 11),
-            Child = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = Brush.Parse("#304344") }
+            Background = Brushes.Transparent,
+            BorderBrush = ThemeBrush("MpsSubtleBorderBrush"),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(0, 0, 0, 16),
+            Child = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, FontSize = 13,
+                LineHeight = 21, Foreground = ThemeBrush("MpsTextBrush") }
         });
     }
 
