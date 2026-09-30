@@ -10,19 +10,23 @@ namespace VideoProductionTests;
 public static class Program
 {
     /// <summary>执行有限数量的领域断言，失败时返回非零代码。</summary>
-    public static int Main()
+    public static async Task<int> Main()
     {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        ConsoleCancelEventHandler cancel = (_, args) => { args.Cancel = true; deadline.Cancel(); };
+        Console.CancelKeyPress += cancel;
         try
         {
             CostDeduplicatesTaskIds();
             CostSeparatesUnknownAndEstimates();
             ManifestRejectsFalseLipSyncAndBadCaptionOrder();
             ProjectDirectorySurvivesCopyAndMove();
-            ProjectDirectoryCreateDoesNotOverwrite().GetAwaiter().GetResult();
-            ProjectOutboundAuthorizationIsExact().GetAwaiter().GetResult();
-            ProviderResponseDropsSensitiveFields();
+            await ProjectDirectoryCreateDoesNotOverwrite();
+            await ProjectOutboundAuthorizationIsExact();
             TimelineCoordinatesTests.Run();
-            Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界、项目复制与移动、外发白名单、响应脱敏、时间坐标。");
+            await SecurityContractTests.RunAsync(deadline.Token);
+            Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界、项目复制与移动、外发哈希预检、时间坐标、安全契约与响应脱敏。");
             return 0;
         }
         catch (Exception error)
@@ -30,6 +34,7 @@ public static class Program
             Console.Error.WriteLine("测试失败：" + error.Message);
             return 1;
         }
+        finally { Console.CancelKeyPress -= cancel; }
     }
 
     /// <summary>同一供应商任务在嵌套记录中出现两次也只能计算一次。</summary>
@@ -199,30 +204,6 @@ public static class Program
         {
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
-    }
-
-    /// <summary>CLI 使用的白名单映射不传播假密钥、签名地址或错误原文。</summary>
-    private static void ProviderResponseDropsSensitiveFields()
-    {
-        const string fakeSecret = "fixture-secret-only";
-        const string fakeUrl = "https://example.invalid/media?signature=fixture-signature";
-        using var response = JsonDocument.Parse("""
-            {"task_id":"job_01","status":"success","price":1.25,"currency":"CNY",
-             "access_token":"fixture-secret-only","url":"https://example.invalid/media?signature=fixture-signature",
-             "error":"provider raw response"}
-            """);
-        var record = new ProviderRecord
-        {
-            TaskId = ProviderResponseMapper.SafeTaskId(response.RootElement, fakeSecret),
-            Status = ProviderResponseMapper.NormalizeStatus(response.RootElement) ?? "unknown"
-        };
-        ProviderResponseMapper.ApplyPrice(record, response.RootElement, null);
-        var stored = JsonSerializer.Serialize(record, JsonFiles.Options);
-        Assert(record.TaskId == "job_01" && record.Status == "success" && record.Price == 1.25m, "白名单字段映射错误");
-        Assert(!stored.Contains(fakeSecret, StringComparison.Ordinal) && !stored.Contains(fakeUrl, StringComparison.Ordinal) &&
-            !stored.Contains("provider raw response", StringComparison.Ordinal), "响应敏感字段进入任务记录");
-        using var echoed = JsonDocument.Parse("""{"task_id":"fixture-secret-only","status":"pending"}""");
-        Assert(ProviderResponseMapper.SafeTaskId(echoed.RootElement, fakeSecret) is null, "回显密钥不能作为任务号");
     }
 
     /// <summary>统一断言消息，避免引入额外测试框架和网络依赖。</summary>

@@ -1,64 +1,185 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:atom="https://atomui.net"
              x:Class="Mps.AvaloniaWorkbench.App"
              RequestedThemeVariant="Light">
+  <Application.Resources>
+    <x:Double x:Key="TextControlPlaceholderOpacity">1</x:Double>
+    <FontFamily x:Key="MpsUiFont">Microsoft YaHei UI, Segoe UI</FontFamily>
+    <Color x:Key="MpsAccentColor">#285FA6</Color>
+    <SolidColorBrush x:Key="MpsSurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MpsCanvasBrush" Color="#F8F9FA" />
+    <SolidColorBrush x:Key="MpsPanelBrush" Color="#F1F2F4" />
+    <SolidColorBrush x:Key="MpsBorderBrush" Color="#D7DBE0" />
+    <SolidColorBrush x:Key="MpsSubtleBorderBrush" Color="#E4E6EA" />
+    <SolidColorBrush x:Key="MpsTextBrush" Color="#252A31" />
+    <SolidColorBrush x:Key="MpsSecondaryTextBrush" Color="#5D6672" />
+    <SolidColorBrush x:Key="MpsDisabledTextBrush" Color="#8B929C" />
+    <SolidColorBrush x:Key="MpsHoverBrush" Color="#E8EBEF" />
+    <SolidColorBrush x:Key="MpsPressedBrush" Color="#DCE1E7" />
+    <SolidColorBrush x:Key="MpsAccentBrush" Color="{StaticResource MpsAccentColor}" />
+    <SolidColorBrush x:Key="MpsAccentHoverBrush" Color="#214F8A" />
+    <SolidColorBrush x:Key="MpsAccentPressedBrush" Color="#1B4274" />
+    <SolidColorBrush x:Key="MpsSelectionBrush" Color="#E3EBF6" />
+    <SolidColorBrush x:Key="MpsSelectionHoverBrush" Color="#D5E2F3" />
+    <SolidColorBrush x:Key="MpsOnAccentBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MpsPreviewBrush" Color="#25272B" />
+    <SolidColorBrush x:Key="MpsVideoBrush" Color="#191B1F" />
+    <SolidColorBrush x:Key="MpsPreviewOverlayBrush" Color="#E625272B" />
+    <SolidColorBrush x:Key="MpsScreenTrackBrush" Color="#D1D9E3" />
+    <SolidColorBrush x:Key="MpsOverlayTrackBrush" Color="#DDDDE0" />
+    <SolidColorBrush x:Key="MpsVoiceTrackBrush" Color="#CEDBD5" />
+    <SolidColorBrush x:Key="MpsMusicTrackBrush" Color="#DCE4DF" />
+    <SolidColorBrush x:Key="MpsCaptionTrackBrush" Color="#E2DFD8" />
+    <SolidColorBrush x:Key="MpsTrackBorderBrush" Color="#A6AFB9" />
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
-        <ColorPaletteResources x:Key="Light" Accent="#137F71" />
+        <ColorPaletteResources x:Key="Light" Accent="{StaticResource MpsAccentColor}" />
       </FluentTheme.Palettes>
     </FluentTheme>
     <Style Selector="Window">
-      <Setter Property="FontFamily" Value="Inter, Microsoft YaHei UI, Noto Sans CJK SC" />
+      <Setter Property="FontFamily" Value="{DynamicResource MpsUiFont}" />
       <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
     </Style>
-    <Style Selector="Button">
+    <!-- 中文正文与动态轨道标签显式选用雅黑，避免仅依赖窗口继承后的宋体回退。 -->
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource MpsUiFont}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontFamily" Value="{DynamicResource MpsUiFont}" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="FontFamily" Value="{DynamicResource MpsUiFont}" />
+    </Style>
+    <Style Selector="Button, atom|Button">
+      <Setter Property="FontFamily" Value="{DynamicResource MpsUiFont}" />
+    </Style>
+    <Style Selector="Button, atom|Button">
       <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="Padding" Value="11,7" />
-      <Setter Property="MinHeight" Value="34" />
-      <Setter Property="Background" Value="#EDF1F1" />
-      <Setter Property="Foreground" Value="#203033" />
-      <Setter Property="BorderBrush" Value="#DCE4E3" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Background" Value="{DynamicResource MpsSurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <Style Selector="Button:pointerover">
-      <Setter Property="Background" Value="#E2ECEA" />
+    <Style Selector="Button:pointerover, atom|Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MpsHoverBrush}" />
     </Style>
-    <Style Selector="Button.primary">
-      <Setter Property="Background" Value="#137F71" />
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderBrush" Value="#137F71" />
-    </Style>
-    <Style Selector="Button.primary:pointerover">
-      <Setter Property="Background" Value="#0F6A5F" />
+    <Style Selector="Button:pressed, atom|Button:pressed">
+      <Setter Property="Background" Value="{DynamicResource MpsPressedBrush}" />
     </Style>
     <Style Selector="Button.icon">
-      <Setter Property="Padding" Value="8" />
-      <Setter Property="MinWidth" Value="34" />
-      <Setter Property="Width" Value="34" />
-      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="7" />
+      <Setter Property="MinWidth" Value="32" />
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="Button.sidebar">
       <Setter Property="HorizontalContentAlignment" Value="Left" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#B9CBC9" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="12,9" />
-      <Setter Property="MinHeight" Value="39" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="MinHeight" Value="37" />
     </Style>
-    <Style Selector="Button.sidebar:pointerover">
-      <Setter Property="Background" Value="#2A3A3D" />
-      <Setter Property="Foreground" Value="White" />
+    <Style Selector="Button.sidebar:pointerover, Button.icon:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MpsHoverBrush}" />
+    </Style>
+    <Style Selector="Button.sidebar:pressed, Button.icon:pressed">
+      <Setter Property="Background" Value="{DynamicResource MpsPressedBrush}" />
     </Style>
     <Style Selector="Button.sidebar.active">
-      <Setter Property="Background" Value="#28534F" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="{DynamicResource MpsSelectionBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsAccentBrush}" />
+    </Style>
+    <Style Selector="Button.sidebar.active:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MpsSelectionHoverBrush}" />
+    </Style>
+    <Style Selector="Button.primary, atom|Button.primary">
+      <Setter Property="Background" Value="{DynamicResource MpsAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsOnAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pointerover, atom|Button.primary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MpsAccentHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentHoverBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pressed, atom|Button.primary:pressed">
+      <Setter Property="Background" Value="{DynamicResource MpsAccentPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentPressedBrush}" />
+    </Style>
+    <Style Selector="Button:focus-visible, atom|Button:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentBrush}" />
+    </Style>
+    <Style Selector="Button:disabled, Button.primary:disabled, Button.icon:disabled, Button.sidebar:disabled, Button.sidebar.active:disabled, atom|Button:disabled, atom|Button.primary:disabled">
+      <Setter Property="Background" Value="{DynamicResource MpsPanelBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsDisabledTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsSubtleBorderBrush}" />
+    </Style>
+    <!-- Fluent 的状态绘制位于模板内；显式复用相同画刷，避免模板外 TemplatedParent 绑定。 -->
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsBorderBrush}" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsPressedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsBorderBrush}" />
+    </Style>
+    <Style Selector="Button.sidebar:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.sidebar:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.sidebar.active:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.sidebar.active:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsSelectionHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsAccentBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsAccentHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsOnAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentHoverBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsAccentPressedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsOnAccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentPressedBrush}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter, Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter, Button.sidebar.active:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource MpsPanelBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsDisabledTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsSubtleBorderBrush}" />
+    </Style>
+    <Style Selector="TextBox, ComboBox">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource MpsSurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsTextBrush}" />
     </Style>
     <Style Selector="TextBox">
-      <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="BorderBrush" Value="#D7E1DF" />
-      <Setter Property="Background" Value="White" />
+      <Setter Property="PlaceholderForeground" Value="{DynamicResource MpsSecondaryTextBrush}" />
+    </Style>
+    <!-- Avalonia 12.1.2 Fluent 的实际占位模板另带透明度，需同时覆盖以保持对比度。 -->
+    <Style Selector="TextBox /template/ TextBlock#PART_Placeholder">
+      <Setter Property="Foreground" Value="{DynamicResource MpsSecondaryTextBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="TextBox:pointerover, ComboBox:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsSecondaryTextBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus, ComboBox:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource MpsAccentBrush}" />
+    </Style>
+    <Style Selector="TextBox:disabled, ComboBox:disabled">
+      <Setter Property="Background" Value="{DynamicResource MpsPanelBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MpsDisabledTextBrush}" />
     </Style>
   </Application.Styles>
 </Application>

@@ -151,7 +151,7 @@ public static partial class MediaWorkflows
         var text = new StringBuilder($"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Caption,Microsoft YaHei,{fontSize},&H00FFFFFF,&H00FFFFFF,&H00132230,&HA0132230,0,0,0,0,100,100,0,0,3,8,0,2,28,{Math.Min(width / 3, 350)},{manifest.TaskbarHeight + 28},1\nStyle: Title,Microsoft YaHei,{fontSize + 4},&H00FFFFFF,&H00FFFFFF,&H00152232,&H00152232,-1,0,0,0,100,100,0,0,3,9,0,7,28,28,25,1\nStyle: Taskbar,Microsoft YaHei,{Math.Max(12, fontSize - 5)},&H004F3A28,&H004F3A28,&H00EAF0F7,&H00EAF0F7,0,0,0,0,100,100,0,0,1,0,0,7,24,24,{top + Math.Max(5, manifest.TaskbarHeight / 3)},1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n");
         var end = sourceDuration / rate;
         AddAss(text, 0, end, "Title", scene.Title);
-        if (manifest.TaskbarHeight > 0) AddAss(text, 0, end, "Taskbar", "MoneyPrinter#  ·  " + manifest.Title + (unsynced ? "  ·  未同步口型草稿" : ""));
+        if (manifest.TaskbarHeight > 0) AddAss(text, 0, end, "Taskbar", "MoneyPrinter#  ·  " + manifest.Title + "  ·  AI 生成主持人与配音" + (unsynced ? "  ·  未同步口型草稿" : ""));
         var cues = scene.Captions.Count > 0 ? scene.Captions : EstimateCaptions(tools, scene.Narration, sourceDuration);
         foreach (var cue in cues.Take(400))
         {

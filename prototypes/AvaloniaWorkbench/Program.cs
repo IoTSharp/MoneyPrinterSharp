@@ -12,6 +12,7 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
         LaunchArguments = args;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }

@@ -1,0 +1,179 @@
+{
+  "SchemaVersion": 1,
+  "StartedAtUtc": "2026-09-29T03:42:28.7403503+00:00",
+  "FinishedAtUtc": "2026-09-29T03:42:50.1244416+00:00",
+  "Machine": {
+    "Os": "Microsoft Windows 10.0.26200",
+    "Framework": ".NET 10.0.12",
+    "Architecture": "X64",
+    "Cpu": "Intel(R) Core(TM) Ultra 9 185H",
+    "LogicalProcessors": 22,
+    "PhysicalMemoryBytes": 68137205760,
+    "Gpu": "not queried; CPU libx264 only; GPU inventory belongs in the accompanying acceptance record"
+  },
+  "PreflightOnly": false,
+  "Scope": "Single-machine synthetic offline media only; not GUI preview, capture, Windows 10 or two-machine acceptance.",
+  "Encoding": "CPU libx264, veryfast, CRF 23, GOP 60, yuv420p; AAC 128kbps/48kHz; 2 codec threads, 1 filter thread",
+  "MemoryMethod": "Windows K32GetProcessMemoryInfo peak working set, sampled every 100ms and once after exit if supported; 0 means unavailable; per child process only, excludes UI, parent and simultaneous system load",
+  "StageTimeoutSeconds": 90,
+  "TotalTimeoutSeconds": 480,
+  "MaximumChildProcesses": 32,
+  "Ffmpeg": "ffmpeg version 9.0.1-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+  "Ffprobe": "ffprobe version 9.0.1-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+  "PreflightPassed": true,
+  "ChildProcessCount": 24,
+  "AllChildProcessesExited": true,
+  "TemporaryMediaRemoved": true,
+  "Samples": [
+    {
+      "Shape": "landscape",
+      "Width": 1920,
+      "Height": 1080,
+      "Fps": 30,
+      "DurationSeconds": 15,
+      "SourceBytes": 10391929,
+      "EncodedBytes": 8975673,
+      "DecodedVideoFrames": 450,
+      "OutputProbePassed": true
+    },
+    {
+      "Shape": "portrait",
+      "Width": 1080,
+      "Height": 1920,
+      "Fps": 30,
+      "DurationSeconds": 15,
+      "SourceBytes": 11239074,
+      "EncodedBytes": 9512394,
+      "DecodedVideoFrames": 450,
+      "OutputProbePassed": true
+    }
+  ],
+  "Measurements": [
+    {
+      "Shape": "landscape",
+      "Operation": "generate",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 4828.55,
+      "PeakWorkingSetBytes": 270393344
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 82.41,
+      "PeakWorkingSetBytes": 28049408
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 2,
+      "ElapsedMilliseconds": 83.27,
+      "PeakWorkingSetBytes": 28053504
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 3,
+      "ElapsedMilliseconds": 77.62,
+      "PeakWorkingSetBytes": 28053504
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 2,
+      "ElapsedMilliseconds": 113.74,
+      "PeakWorkingSetBytes": 49688576
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 7,
+      "ElapsedMilliseconds": 181.78,
+      "PeakWorkingSetBytes": 54218752
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 12,
+      "ElapsedMilliseconds": 117.61,
+      "PeakWorkingSetBytes": 49762304
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "encode-15s",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 3995.55,
+      "PeakWorkingSetBytes": 267161600
+    },
+    {
+      "Shape": "landscape",
+      "Operation": "full-decode",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 1130.77,
+      "PeakWorkingSetBytes": 62271488
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "generate",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 4189.59,
+      "PeakWorkingSetBytes": 274407424
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 92.42,
+      "PeakWorkingSetBytes": 28221440
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 2,
+      "ElapsedMilliseconds": 82.77,
+      "PeakWorkingSetBytes": 28291072
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "probe",
+      "RepeatOrSeekSeconds": 3,
+      "ElapsedMilliseconds": 80.76,
+      "PeakWorkingSetBytes": 28225536
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 2,
+      "ElapsedMilliseconds": 121.06,
+      "PeakWorkingSetBytes": 53911552
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 7,
+      "ElapsedMilliseconds": 170.59,
+      "PeakWorkingSetBytes": 56610816
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "seek-one-frame",
+      "RepeatOrSeekSeconds": 12,
+      "ElapsedMilliseconds": 117.44,
+      "PeakWorkingSetBytes": 52813824
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "encode-15s",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 4123.47,
+      "PeakWorkingSetBytes": 274046976
+    },
+    {
+      "Shape": "portrait",
+      "Operation": "full-decode",
+      "RepeatOrSeekSeconds": 1,
+      "ElapsedMilliseconds": 1186.29,
+      "PeakWorkingSetBytes": 63836160
+    }
+  ]
+}

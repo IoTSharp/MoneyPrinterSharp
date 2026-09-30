@@ -1,6 +1,6 @@
 # MPS 项目目录契约
 
-`project.mps.json` 是新项目的根文件，采用 UTF-8、`format: mps.project` 和 `schema_version: 1`。当前最小实现保存项目身份、名称、创建时间和素材引用；时间线、会话及授权结构将在相应里程碑扩展。现有 CLI 的 `manifest.json` 是独立旧格式，仍按原入口读取，不被新根文件覆盖。
+`project.mps.json` 是新项目的根文件，采用 UTF-8、`format: mps.project` 和 `schema_version: 1`。当前最小实现保存项目身份、名称、创建时间、素材引用及素材哈希外发预检授权；时间线、会话及完整预算授权结构将在相应里程碑扩展。现有 CLI 的 `manifest.json` 是独立旧格式，仍按原入口读取，不被新根文件覆盖。
 
 | 路径 | 用途 | 保留与清理 |
 | --- | --- | --- |

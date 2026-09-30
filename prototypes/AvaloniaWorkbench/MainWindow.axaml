@@ -3,7 +3,7 @@
         xmlns:atom="https://atomui.net"
         x:Class="Mps.AvaloniaWorkbench.MainWindow"
         Title="MoneyPrinter#" Width="1480" Height="900" MinWidth="760" MinHeight="620"
-        Background="#F5F7F7" Foreground="#1B2C2E" WindowStartupLocation="CenterScreen">
+        Background="{DynamicResource MpsCanvasBrush}" Foreground="{DynamicResource MpsTextBrush}" WindowStartupLocation="CenterScreen">
   <Grid x:Name="RootGrid">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="240" />
@@ -11,32 +11,32 @@
       <ColumnDefinition Width="*" MinWidth="360" />
     </Grid.ColumnDefinitions>
 
-    <Border x:Name="FullSidebar" Grid.Column="0" Background="#1D292B">
+    <Border x:Name="FullSidebar" Grid.Column="0" Background="{DynamicResource MpsPanelBrush}">
       <Grid RowDefinitions="68,82,*,74">
         <Grid Grid.Row="0" ColumnDefinitions="36,*" Margin="18,14,16,10">
-          <Border Width="34" Height="34" CornerRadius="7" Background="#26A18F" VerticalAlignment="Center">
-            <TextBlock Text="M" Foreground="White" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Border Width="34" Height="34" CornerRadius="4" Background="{DynamicResource MpsTextBrush}" VerticalAlignment="Center">
+            <TextBlock Text="M" Foreground="{DynamicResource MpsOnAccentBrush}" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
-            <TextBlock Text="MoneyPrinter#" Foreground="White" FontSize="16" FontWeight="Bold" />
-            <TextBlock Text="VIDEO WORKSPACE" Foreground="#8EA8A5" FontSize="9" FontWeight="SemiBold" />
+            <TextBlock Text="MoneyPrinter#" Foreground="{DynamicResource MpsTextBrush}" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="VIDEO WORKSPACE" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="9" FontWeight="SemiBold" />
           </StackPanel>
         </Grid>
-        <Border Grid.Row="1" Background="#263638" CornerRadius="7" Margin="14,4,14,14" Padding="12,8">
+        <Border Grid.Row="1" Background="{DynamicResource MpsSurfaceBrush}" CornerRadius="4" Margin="14,4,14,14" Padding="12,8">
           <Grid ColumnDefinitions="34,*,16">
-            <Border Width="30" Height="30" CornerRadius="5" Background="#4D7470" VerticalAlignment="Center">
-              <LucideIcon Kind="Clapperboard" Size="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Border Width="30" Height="30" CornerRadius="4" Background="{DynamicResource MpsHoverBrush}" VerticalAlignment="Center">
+              <LucideIcon Kind="Clapperboard" Size="16" Foreground="{DynamicResource MpsTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Spacing="3">
-              <TextBlock Text="桌面产品讲解" Foreground="White" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="工作项目 · 本地" Foreground="#A6BDB9" FontSize="10" />
+              <TextBlock Text="桌面产品讲解" Foreground="{DynamicResource MpsTextBrush}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="工作项目 · 本地" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10" />
             </StackPanel>
-            <LucideIcon Grid.Column="2" Kind="ChevronDown" Size="14" Foreground="#A6BDB9" VerticalAlignment="Center" />
+            <LucideIcon Grid.Column="2" Kind="ChevronDown" Size="14" Foreground="{DynamicResource MpsSecondaryTextBrush}" VerticalAlignment="Center" />
           </Grid>
         </Border>
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,2,12,8" Spacing="2">
-            <TextBlock Text="工作区" Foreground="#758F8D" FontSize="10" FontWeight="Bold" Margin="11,6,0,7" />
+            <TextBlock Text="工作区" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" FontWeight="Normal" Margin="11,6,0,7" />
             <Button Classes="sidebar active" Click="Workbench_Click">
               <StackPanel Orientation="Horizontal" Spacing="12"><LucideIcon Kind="PanelsTopLeft" Size="17" /><TextBlock Text="制作工作台" VerticalAlignment="Center" /></StackPanel>
             </Button>
@@ -52,9 +52,9 @@
             <Button Classes="sidebar" Click="Delivery_Click">
               <StackPanel Orientation="Horizontal" Spacing="12"><LucideIcon Kind="PackageCheck" Size="17" /><TextBlock Text="交付" VerticalAlignment="Center" /></StackPanel>
             </Button>
-            <Border Height="1" Background="#344648" Margin="8,15,8,12" />
+            <Border Height="1" Background="{DynamicResource MpsBorderBrush}" Margin="8,15,8,12" />
             <Grid ColumnDefinitions="*,Auto" Margin="11,0,3,7">
-              <TextBlock Text="制作会话" Foreground="#758F8D" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
+              <TextBlock Text="制作会话" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" FontWeight="Normal" VerticalAlignment="Center" />
               <Button Grid.Column="1" Classes="sidebar" Padding="4" Width="27" Height="27" ToolTip.Tip="新建会话" Click="NewSession_Click">
                 <LucideIcon Kind="Plus" Size="15" />
               </Button>
@@ -67,33 +67,33 @@
                 <StackPanel Orientation="Horizontal" Spacing="10"><LucideIcon Kind="MessageSquare" Size="16" /><TextBlock Text="竖屏适配" /></StackPanel>
               </Button>
             </StackPanel>
-            <Border Height="1" Background="#344648" Margin="8,15,8,12" />
-            <TextBlock Text="制作阶段" Foreground="#758F8D" FontSize="10" FontWeight="Bold" Margin="11,0,0,8" />
-            <Button Classes="sidebar" Click="AuditSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="01" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="功能审计"/><LucideIcon Grid.Column="2" Kind="Check" Size="14" Foreground="#69BBAA"/></Grid></Button>
-            <Button Classes="sidebar" Click="NarrativeSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="02" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="叙事规划"/><LucideIcon Grid.Column="2" Kind="Check" Size="14" Foreground="#69BBAA"/></Grid></Button>
-            <Button Classes="sidebar active" Click="ScreenplaySkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="03" Foreground="#A7E0D8"/><TextBlock Grid.Column="1" Text="讲稿分镜"/><Border Grid.Column="2" Width="6" Height="6" CornerRadius="3" Background="#7FE1D0" VerticalAlignment="Center"/></Grid></Button>
-            <Button Classes="sidebar" Click="ModelSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="04" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="模型选择"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="PresenterSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="05" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="主持人"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="NarrationSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="06" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="旁白"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="LipSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="07" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="口型"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="CompositionSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="08" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="合成"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="ReviewSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="09" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="质量复核"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
-            <Button Classes="sidebar" Click="CostSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="10" Foreground="#7CAFA8"/><TextBlock Grid.Column="1" Text="费用交付"/><TextBlock Grid.Column="2" Text="待开始" Foreground="#758F8D" FontSize="10"/></Grid></Button>
+            <Border Height="1" Background="{DynamicResource MpsBorderBrush}" Margin="8,15,8,12" />
+            <TextBlock Text="制作阶段" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" FontWeight="Normal" Margin="11,0,0,8" />
+            <Button Classes="sidebar" Click="AuditSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="01" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="功能审计"/><LucideIcon Grid.Column="2" Kind="Check" Size="14" Foreground="{DynamicResource MpsSecondaryTextBrush}"/></Grid></Button>
+            <Button Classes="sidebar" Click="NarrativeSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="02" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="叙事规划"/><LucideIcon Grid.Column="2" Kind="Check" Size="14" Foreground="{DynamicResource MpsSecondaryTextBrush}"/></Grid></Button>
+            <Button Classes="sidebar active" Click="ScreenplaySkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="03" Foreground="{DynamicResource MpsAccentBrush}"/><TextBlock Grid.Column="1" Text="讲稿分镜"/><Border Grid.Column="2" Width="6" Height="6" CornerRadius="3" Background="{DynamicResource MpsAccentBrush}" VerticalAlignment="Center"/></Grid></Button>
+            <Button Classes="sidebar" Click="ModelSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="04" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="模型选择"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="PresenterSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="05" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="主持人"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="NarrationSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="06" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="旁白"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="LipSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="07" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="口型"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="CompositionSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="08" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="合成"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="ReviewSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="09" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="质量复核"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
+            <Button Classes="sidebar" Click="CostSkill_Click"><Grid ColumnDefinitions="28,*,Auto"><TextBlock Text="10" Foreground="{DynamicResource MpsSecondaryTextBrush}"/><TextBlock Grid.Column="1" Text="费用交付"/><TextBlock Grid.Column="2" Text="待开始" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid></Button>
           </StackPanel>
         </ScrollViewer>
-        <Border Grid.Row="3" BorderBrush="#344648" BorderThickness="0,1,0,0" Padding="15,12">
+        <Border Grid.Row="3" BorderBrush="{DynamicResource MpsBorderBrush}" BorderThickness="0,1,0,0" Padding="15,12">
           <Grid ColumnDefinitions="32,*,18">
-            <Border Width="30" Height="30" CornerRadius="15" Background="#D3A079"><TextBlock Text="M" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Spacing="2"><TextBlock Text="本地工作区" Foreground="White" FontSize="11" FontWeight="SemiBold" /><TextBlock Text="演示账号 · 无外发" Foreground="#8EA8A5" FontSize="10" /></StackPanel>
-            <LucideIcon Grid.Column="2" Kind="Settings" Size="16" Foreground="#8EA8A5" VerticalAlignment="Center" />
+            <Border Width="30" Height="30" CornerRadius="4" Background="{DynamicResource MpsHoverBrush}"><TextBlock Text="M" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Spacing="2"><TextBlock Text="本地工作区" Foreground="{DynamicResource MpsTextBrush}" FontSize="11" FontWeight="SemiBold" /><TextBlock Text="演示账号 · 无外发" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10" /></StackPanel>
+            <LucideIcon Grid.Column="2" Kind="Settings" Size="16" Foreground="{DynamicResource MpsSecondaryTextBrush}" VerticalAlignment="Center" />
           </Grid>
         </Border>
       </Grid>
     </Border>
 
-    <Border x:Name="CompactSidebar" Grid.Column="0" Background="#1D292B" IsVisible="False">
+    <Border x:Name="CompactSidebar" Grid.Column="0" Background="{DynamicResource MpsPanelBrush}" IsVisible="False">
       <StackPanel Margin="8,15" Spacing="12">
-        <Border Width="36" Height="36" CornerRadius="7" Background="#26A18F"><TextBlock Text="M" Foreground="White" FontSize="19" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+        <Border Width="36" Height="36" CornerRadius="4" Background="{DynamicResource MpsTextBrush}"><TextBlock Text="M" Foreground="{DynamicResource MpsOnAccentBrush}" FontSize="19" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         <Button x:Name="CompactMenuButton" Classes="sidebar" Width="40" Height="40" Padding="11" ToolTip.Tip="项目、会话和技能" Click="CompactMenu_Click"><LucideIcon Kind="Menu" Size="18" /></Button>
         <Button Classes="sidebar active" Width="40" Height="40" Padding="11" ToolTip.Tip="制作工作台" Click="Workbench_Click"><LucideIcon Kind="PanelsTopLeft" Size="18" /></Button>
         <Button Classes="sidebar" Width="40" Height="40" Padding="11" ToolTip.Tip="素材库" Click="Assets_Click"><LucideIcon Kind="FolderOpen" Size="18" /></Button>
@@ -103,25 +103,25 @@
       </StackPanel>
     </Border>
 
-    <Border Grid.Column="1" Background="White" BorderBrush="#DCE4E3" BorderThickness="0,0,1,0">
+    <Border Grid.Column="1" Background="{DynamicResource MpsSurfaceBrush}" BorderBrush="{DynamicResource MpsBorderBrush}" BorderThickness="0,0,1,0">
       <Grid RowDefinitions="76,*,152">
-        <Border BorderBrush="#E5EAEA" BorderThickness="0,0,0,1" Padding="20,12">
+        <Border BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="20,12">
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
-            <StackPanel VerticalAlignment="Center" Spacing="4"><TextBlock x:Name="SessionTitle" Text="主版本制作" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="SessionMeta" Text="讲稿分镜 · 第 3 / 10 阶段" Foreground="#7C8E8D" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>
+            <StackPanel VerticalAlignment="Center" Spacing="4"><TextBlock x:Name="SessionTitle" Text="主版本制作" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="SessionMeta" Text="讲稿分镜 · 第 3 / 10 阶段" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>
             <ComboBox x:Name="ScenarioBox" Grid.Column="1" Width="116" SelectedIndex="1" VerticalAlignment="Center" ToolTip.Tip="原型场景" SelectionChanged="ScenarioBox_SelectionChanged"><ComboBoxItem Content="空项目"/><ComboBoxItem Content="制作中"/><ComboBoxItem Content="任务失败"/><ComboBoxItem Content="预算耗尽"/><ComboBoxItem Content="模型未知"/><ComboBoxItem Content="导出完成"/><ComboBoxItem Content="窄窗口"/></ComboBox>
             <Button Grid.Column="2" Classes="icon" VerticalAlignment="Center" ToolTip.Tip="新建会话" Click="NewSession_Click"><LucideIcon Kind="Plus" Size="17"/></Button>
           </Grid>
         </Border>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="#FBFCFC">
-          <StackPanel x:Name="ConversationList" Margin="20,18,20,24" Spacing="14" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="{DynamicResource MpsCanvasBrush}">
+          <StackPanel x:Name="ConversationList" Margin="20,20,20,24" Spacing="20" />
         </ScrollViewer>
-        <Border Grid.Row="2" BorderBrush="#E5EAEA" BorderThickness="0,1,0,0" Padding="16,12">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,1,0,0" Padding="16,12">
           <Grid RowDefinitions="*,Auto" RowSpacing="7">
             <TextBox x:Name="PromptBox" PlaceholderText="继续制作对话..." AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" MaxHeight="88" Padding="11,9" />
             <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
               <Button Classes="icon" ToolTip.Tip="附加项目素材" Click="Attach_Click"><LucideIcon Kind="Paperclip" Size="17"/></Button>
-              <TextBlock x:Name="ComposerHint" Grid.Column="1" Text="仅使用项目已授权素材" Foreground="#9AA9A7" FontSize="10" VerticalAlignment="Center" Margin="8,0"/>
-              <atom:Button Grid.Column="2" ButtonType="Primary" Background="#137F71" BorderBrush="#137F71" Click="Send_Click" ToolTip.Tip="发送制作指令">发送</atom:Button>
+              <TextBlock x:Name="ComposerHint" Grid.Column="1" Text="仅使用项目已授权素材" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10" VerticalAlignment="Center" Margin="8,0"/>
+              <atom:Button Grid.Column="2" ButtonType="Primary" Classes="primary" Click="Send_Click" ToolTip.Tip="发送制作指令">发送</atom:Button>
             </Grid>
           </Grid>
         </Border>
@@ -129,39 +129,39 @@
     </Border>
 
     <Grid Grid.Column="2" RowDefinitions="63,*,340">
-      <Border Grid.Row="0" Background="White" BorderBrush="#DEE6E5" BorderThickness="0,0,0,1" Padding="22,10">
+      <Border Grid.Row="0" Background="{DynamicResource MpsSurfaceBrush}" BorderBrush="{DynamicResource MpsBorderBrush}" BorderThickness="0,0,0,1" Padding="22,10">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-          <StackPanel VerticalAlignment="Center" Spacing="2"><TextBlock Text="桌面产品讲解" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="ProjectMeta" Text="项目草稿  /  16:9  /  30 秒" FontSize="11" Foreground="#81918F" TextTrimming="CharacterEllipsis"/></StackPanel>
-          <Border Grid.Column="1" Background="#EFF6F3" CornerRadius="5" Padding="9,5" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="5"><Border Width="6" Height="6" CornerRadius="3" Background="#20977C" VerticalAlignment="Center"/><TextBlock x:Name="ProjectState" Text="制作中" Foreground="#347668" FontSize="11"/></StackPanel></Border>
-          <atom:Button Grid.Column="2" ButtonType="Primary" Background="#137F71" BorderBrush="#137F71" MinWidth="92" Click="Export_Click">导出</atom:Button>
+          <StackPanel VerticalAlignment="Center" Spacing="2"><TextBlock Text="桌面产品讲解" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="ProjectMeta" Text="项目草稿  /  16:9  /  30 秒" FontSize="11" Foreground="{DynamicResource MpsSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/></StackPanel>
+          <Border Grid.Column="1" Background="{DynamicResource MpsPanelBrush}" CornerRadius="4" Padding="9,5" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="5"><Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource MpsSecondaryTextBrush}" VerticalAlignment="Center"/><TextBlock x:Name="ProjectState" Text="制作中" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11"/></StackPanel></Border>
+          <atom:Button Grid.Column="2" ButtonType="Primary" Classes="primary" MinWidth="92" Click="Export_Click">导出</atom:Button>
         </Grid>
       </Border>
 
-      <Grid Grid.Row="1" RowDefinitions="46,*,53" Background="#F5F7F7">
+      <Grid Grid.Row="1" RowDefinitions="46,*,53" Background="{DynamicResource MpsCanvasBrush}">
         <Grid Margin="22,0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><TextBlock Text="画面预览" FontWeight="SemiBold" FontSize="13"/><TextBlock x:Name="PreviewMetadata" Text="1280 × 720  ·  30 fps" Foreground="#8C9B99" FontSize="11" VerticalAlignment="Center"/></StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><TextBlock Text="画面预览" FontWeight="SemiBold" FontSize="13"/><TextBlock x:Name="PreviewMetadata" Text="1280 × 720  ·  30 fps" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" VerticalAlignment="Center"/></StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"><Button x:Name="LandscapeButton" Classes="primary" Padding="8,4" MinHeight="27" Click="Landscape_Click">16:9</Button><Button x:Name="PortraitButton" Padding="8,4" MinHeight="27" Click="Portrait_Click">9:16</Button></StackPanel>
         </Grid>
-        <Border Grid.Row="1" x:Name="PreviewFrame" Background="#151E20" CornerRadius="7" Margin="22,0" ClipToBounds="True">
+        <Border Grid.Row="1" x:Name="PreviewFrame" Background="{DynamicResource MpsPreviewBrush}" CornerRadius="4" Margin="22,0" ClipToBounds="True">
           <Grid>
-            <Border x:Name="VideoSurface" Width="600" Height="338" Background="#101719" CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border x:Name="VideoSurface" Width="600" Height="338" Background="{DynamicResource MpsVideoBrush}" CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center" VerticalAlignment="Center">
               <Image x:Name="PreviewImage" Source="avares://Mps.AvaloniaWorkbench/Assets/screen-zh.png" Stretch="UniformToFill" />
             </Border>
-            <Border x:Name="PreviewMessageBackground" Background="#CC142326" CornerRadius="5" Padding="18,10" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False"><TextBlock x:Name="PreviewMessage" Text="" Foreground="White" FontWeight="SemiBold"/></Border>
+            <Border x:Name="PreviewMessageBackground" Background="{DynamicResource MpsPreviewOverlayBrush}" CornerRadius="4" Padding="18,10" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False"><TextBlock x:Name="PreviewMessage" Text="" Foreground="{DynamicResource MpsOnAccentBrush}" FontWeight="SemiBold"/></Border>
           </Grid>
         </Border>
         <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="13" Margin="22,8,22,5" VerticalAlignment="Center">
-          <Button x:Name="PlayButton" Classes="icon" Background="White" Click="Play_Click" ToolTip.Tip="播放或暂停"><Grid><LucideIcon x:Name="PlayIcon" Kind="Play" Size="16"/><LucideIcon x:Name="PauseIcon" Kind="Pause" Size="16" IsVisible="False"/></Grid></Button>
+          <Button x:Name="PlayButton" Classes="icon" Click="Play_Click" ToolTip.Tip="播放或暂停"><Grid><LucideIcon x:Name="PlayIcon" Kind="Play" Size="16"/><LucideIcon x:Name="PauseIcon" Kind="Pause" Size="16" IsVisible="False"/></Grid></Button>
           <TextBlock x:Name="Timecode" Grid.Column="1" Text="00:00 / 00:30" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" MinWidth="83"/>
           <Slider x:Name="PlaybackSlider" Grid.Column="2" Minimum="0" Maximum="30" Value="0" VerticalAlignment="Center" PropertyChanged="PlaybackSlider_PropertyChanged"/>
-          <Button Grid.Column="3" Classes="icon" Background="White" Click="Fit_Click" ToolTip.Tip="适应预览区域"><LucideIcon Kind="Maximize" Size="16"/></Button>
+          <Button Grid.Column="3" Classes="icon" Click="Fit_Click" ToolTip.Tip="适应预览区域"><LucideIcon Kind="Maximize" Size="16"/></Button>
         </Grid>
       </Grid>
 
-      <Border Grid.Row="2" Background="White" BorderBrush="#DEE6E5" BorderThickness="0,1,0,0">
+      <Border Grid.Row="2" Background="{DynamicResource MpsSurfaceBrush}" BorderBrush="{DynamicResource MpsBorderBrush}" BorderThickness="0,1,0,0">
         <Grid RowDefinitions="54,*,30">
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="19,8,18,7" ColumnSpacing="14">
-            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><TextBlock Text="时间线" FontWeight="Bold" FontSize="13"/><TextBlock x:Name="TimelineSummary" Text="5 条轨道  ·  7 个片段" Foreground="#8D9B99" FontSize="11" VerticalAlignment="Center"/></StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><TextBlock Text="时间线" FontWeight="SemiBold" FontSize="13"/><TextBlock x:Name="TimelineSummary" Text="5 条轨道  ·  7 个片段" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" VerticalAlignment="Center"/></StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
               <Button Classes="icon" ToolTip.Tip="撤销" Click="Undo_Click"><LucideIcon Kind="Undo2" Size="16"/></Button>
               <Button Classes="icon" ToolTip.Tip="分割片段" Click="Split_Click"><LucideIcon Kind="Scissors" Size="16"/></Button>
@@ -169,22 +169,22 @@
               <Button Classes="icon" ToolTip.Tip="片段左移一秒" Click="MoveLeft_Click"><LucideIcon Kind="ArrowLeft" Size="16"/></Button>
               <Button Classes="icon" ToolTip.Tip="片段右移一秒" Click="MoveRight_Click"><LucideIcon Kind="ArrowRight" Size="16"/></Button>
             </StackPanel>
-            <StackPanel x:Name="ZoomControl" Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock Text="缩放" Foreground="#8D9B99" FontSize="10" VerticalAlignment="Center"/><Slider x:Name="ZoomSlider" Minimum="16" Maximum="34" Value="24" Width="76" PropertyChanged="ZoomSlider_PropertyChanged"/></StackPanel>
+            <StackPanel x:Name="ZoomControl" Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock Text="缩放" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/><Slider x:Name="ZoomSlider" Minimum="16" Maximum="34" Value="24" Width="76" PropertyChanged="ZoomSlider_PropertyChanged"/></StackPanel>
           </Grid>
-          <Grid Grid.Row="1" ColumnDefinitions="139,*" Background="#FBFCFC">
+          <Grid Grid.Row="1" ColumnDefinitions="139,*" Background="{DynamicResource MpsCanvasBrush}">
             <StackPanel Grid.Column="0" Spacing="0">
-              <Border Height="32" Background="#F1F5F4" BorderBrush="#DCE5E3" BorderThickness="0,1,1,1" Padding="13,8"><TextBlock Text="轨道" Foreground="#81928E" FontSize="10" FontWeight="SemiBold"/></Border>
-              <Border Height="39" BorderBrush="#E6EBEA" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="屏幕画面" FontSize="11"/></Border>
-              <Border Height="39" BorderBrush="#E6EBEA" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="主持人 / 贴图" FontSize="11"/></Border>
-              <Border Height="39" BorderBrush="#E6EBEA" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="旁白" FontSize="11"/></Border>
-              <Border Height="39" BorderBrush="#E6EBEA" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="音乐" FontSize="11"/></Border>
-              <Border Height="39" BorderBrush="#E6EBEA" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="字幕" FontSize="11"/></Border>
+              <Border Height="32" Background="{DynamicResource MpsPanelBrush}" BorderBrush="{DynamicResource MpsBorderBrush}" BorderThickness="0,1,1,1" Padding="13,8"><TextBlock Text="轨道" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="11" FontWeight="Normal"/></Border>
+              <Border Height="39" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="屏幕画面" FontSize="11"/></Border>
+              <Border Height="39" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="主持人 / 贴图" FontSize="11"/></Border>
+              <Border Height="39" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="旁白" FontSize="11"/></Border>
+              <Border Height="39" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="音乐" FontSize="11"/></Border>
+              <Border Height="39" BorderBrush="{DynamicResource MpsSubtleBorderBrush}" BorderThickness="0,0,1,1" Padding="13,10"><TextBlock Text="字幕" FontSize="11"/></Border>
             </StackPanel>
-            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-              <StackPanel><Canvas x:Name="RulerCanvas" Width="1050" Height="32" Background="#F1F5F4"/><Canvas x:Name="TimelineCanvas" Width="1050" Height="195" Background="#FBFCFC"/></StackPanel>
+            <ScrollViewer x:Name="TimelineViewport" Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <StackPanel><Canvas x:Name="RulerCanvas" Width="1050" Height="32" Background="{DynamicResource MpsPanelBrush}"/><Canvas x:Name="TimelineCanvas" Width="1050" Height="195" Background="{DynamicResource MpsCanvasBrush}"/></StackPanel>
             </ScrollViewer>
           </Grid>
-          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="19,3,19,0"><TextBlock x:Name="SelectedClipText" Text="选择片段查看属性" Foreground="#81928E" FontSize="10"/><TextBlock Grid.Column="1" Text="30 FPS · 吸附开启" Foreground="#A1AFAD" FontSize="10"/></Grid>
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="19,3,19,0"><TextBlock x:Name="SelectedClipText" Text="选择片段查看属性" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/><TextBlock Grid.Column="1" Text="30 FPS · 吸附开启" Foreground="{DynamicResource MpsSecondaryTextBrush}" FontSize="10"/></Grid>
         </Grid>
       </Border>
     </Grid>
