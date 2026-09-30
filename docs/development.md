@@ -5,7 +5,8 @@
 ## 当前结构
 
 - `skills/video-production-series`：总入口；其余十个技能覆盖软件功能证据、介绍顺序、剧本分镜、模型选择、主持人、配音、口型、透明合成、验收与费用交付。
-- `src/VideoProduction`：C# CLI，包含本地 FFmpeg 管线、Moark 请求与恢复、凭据管理、成本去重及技能安装。
+- `src/VideoProduction.Core`：桌面程序与 CLI 可直接引用的 .NET 10 共享核心，包含项目目录、媒体流程、清单校验、费用汇总、进程执行及安全预检。
+- `src/VideoProduction`：C# CLI，负责命令参数、Moark 请求与恢复、凭据管理及技能安装；媒体流程由共享核心执行。
 - `tests/VideoProduction.Tests`：无需付费服务的控制台回归测试。
 
 ## 构建与验证

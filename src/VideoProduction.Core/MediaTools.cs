@@ -15,7 +15,7 @@ public sealed record MediaInfo(string Path, double Duration, string Format, IRea
 public sealed record MediaStreamInfo(int Index, string Type, string Codec, string PixelFormat, int Width, int Height, int Channels, int SampleRate, double Duration);
 
 /// <summary>FFmpeg工具发现、探测及有界执行，不递归查找软件或依赖。</summary>
-internal sealed class MediaTools
+public sealed class MediaTools
 {
     private const string KnownBin = @"C:\Users\mysti\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg.Shared_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0.1-full_build-shared\bin";
     private readonly Stopwatch clock = Stopwatch.StartNew();
@@ -25,14 +25,13 @@ internal sealed class MediaTools
     public CancellationToken Cancellation { get; }
 
     /// <summary>按显式路径、PATH、已知固定路径依次发现工具，并建立总时限。</summary>
-    public MediaTools(Arguments args, CancellationToken ct)
+    public MediaTools(string? ffmpeg, string? ffprobe, TimeSpan timeout, CancellationToken ct)
     {
-        var seconds = args.Int("timeout", 900);
-        if (seconds is < 5 or > 7200) throw new ArgumentException("--timeout必须在5到7200秒之间。");
-        totalTimeout = TimeSpan.FromSeconds(seconds);
+        if (timeout < TimeSpan.FromSeconds(5) || timeout > TimeSpan.FromHours(2)) throw new ArgumentException("媒体总时限须在5到7200秒之间。");
+        totalTimeout = timeout;
         Cancellation = ct;
-        Ffmpeg = FindExecutable(args.Optional("ffmpeg"), "ffmpeg");
-        Ffprobe = FindExecutable(args.Optional("ffprobe"), "ffprobe");
+        Ffmpeg = FindExecutable(ffmpeg, "ffmpeg");
+        Ffprobe = FindExecutable(ffprobe, "ffprobe");
     }
 
     /// <summary>检查取消状态及总墙钟上限，所有媒体循环均调用该方法。</summary>
@@ -134,7 +133,7 @@ internal sealed class MediaTools
 }
 
 /// <summary>独占临时目录，只回收本对象创建且路径身份一致的文件树。</summary>
-internal sealed class MediaScratch : IDisposable
+public sealed class MediaScratch : IDisposable
 {
     public string DirectoryPath { get; }
     private readonly string identity = Guid.NewGuid().ToString("N");

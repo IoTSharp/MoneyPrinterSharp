@@ -1,3 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using VideoProduction;
 
 namespace VideoProductionTests;
@@ -13,7 +17,12 @@ public static class Program
             CostDeduplicatesTaskIds();
             CostSeparatesUnknownAndEstimates();
             ManifestRejectsFalseLipSyncAndBadCaptionOrder();
-            Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界。");
+            ProjectDirectorySurvivesCopyAndMove();
+            ProjectDirectoryCreateDoesNotOverwrite().GetAwaiter().GetResult();
+            ProjectOutboundAuthorizationIsExact().GetAwaiter().GetResult();
+            ProviderResponseDropsSensitiveFields();
+            TimelineCoordinatesTests.Run();
+            Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界、项目复制与移动、外发白名单、响应脱敏、时间坐标。");
             return 0;
         }
         catch (Exception error)
@@ -60,6 +69,160 @@ public static class Program
         var errors = ProjectCommands.Validate(manifest, Path.Combine(Path.GetTempPath(), "manifest.json"), draft: true);
         Assert(errors.Any(error => error.Contains("字幕", StringComparison.Ordinal)), "应拒绝倒序字幕");
         Assert(manifest.Scenes[0].Clips[0].LipSynced == false, "测试素材应保留同步声明");
+    }
+
+    /// <summary>同一素材引用在项目复制与移动后仍从新根解析，越界路径被拒绝。</summary>
+    private static void ProjectDirectorySurvivesCopyAndMove()
+    {
+        var temporary = Path.Combine(Path.GetTempPath(), "mps-directory-test-" + Guid.NewGuid().ToString("N"));
+        var original = Path.Combine(temporary, "original");
+        var copied = Path.Combine(temporary, "copied");
+        var moved = Path.Combine(temporary, "moved");
+        try
+        {
+            var project = ProjectDirectory.Create(original, "本地测试项目");
+            var asset = new MpsAssetReference { Path = "assets/source/sample.txt" };
+            File.WriteAllText(ProjectDirectory.ResolvePath(original, asset.Path), "local fixture");
+            project.Assets.Add(asset);
+            ProjectDirectory.Save(original, project);
+
+            Directory.CreateDirectory(Path.Combine(copied, "assets", "source"));
+            File.Copy(Path.Combine(original, ProjectDirectory.ProjectFileName), Path.Combine(copied, ProjectDirectory.ProjectFileName));
+            File.Copy(ProjectDirectory.ResolvePath(original, asset.Path), ProjectDirectory.ResolvePath(copied, asset.Path));
+            Directory.Move(copied, moved);
+
+            var reopened = ProjectDirectory.Open(moved);
+            Assert(reopened.Id == project.Id && reopened.Assets.Single().Path == asset.Path, "复制移动后项目引用变化");
+            Assert(File.ReadAllText(ProjectDirectory.ResolvePath(moved, reopened.Assets.Single().Path)) == "local fixture", "复制移动后素材未从新根解析");
+            File.Delete(ProjectDirectory.ResolvePath(moved, asset.Path));
+            Assert(ProjectDirectory.Open(moved).Assets.Count == 1, "素材失联时不应删除项目引用");
+            Assert(RejectsInvalidPath(moved, "../outside.txt"), "项目路径不应允许上行");
+            Assert(RejectsInvalidPath(moved, "C:/outside.txt"), "项目路径不应允许绝对盘符");
+            var linkedRoot = Path.Combine(temporary, "linked-root");
+            var linkCreated = false;
+            try
+            {
+                Directory.CreateSymbolicLink(linkedRoot, original);
+                linkCreated = true;
+            }
+            catch (Exception error) when (error is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            {
+                // 未开放符号链接权限的机器跳过此项；其余路径测试仍执行。
+            }
+            if (linkCreated)
+            {
+                try
+                {
+                    Assert(RejectsInvalidPath(linkedRoot, asset.Path), "项目根重解析点应被拒绝");
+                    try { _ = ProjectDirectory.Open(linkedRoot); throw new InvalidOperationException("空项目根重解析点被读取"); }
+                    catch (InvalidDataException) { }
+                    try { ProjectDirectory.Save(linkedRoot, project); throw new InvalidOperationException("项目根重解析点被写入"); }
+                    catch (InvalidDataException) { }
+                }
+                finally { Directory.Delete(linkedRoot); }
+            }
+            var file = Path.Combine(moved, ProjectDirectory.ProjectFileName);
+            var json = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+            json["credential"] = "fixture-only";
+            File.WriteAllText(file, json.ToJsonString());
+            try { _ = ProjectDirectory.Open(moved); throw new InvalidOperationException("未知凭据字段被接受"); }
+            catch (JsonException) { }
+        }
+        finally
+        {
+            if (Directory.Exists(temporary)) Directory.Delete(temporary, recursive: true);
+        }
+    }
+
+    /// <summary>仅将预期的非法路径异常视为拒绝。</summary>
+    private static bool RejectsInvalidPath(string root, string relativePath)
+    {
+        try { _ = ProjectDirectory.ResolvePath(root, relativePath); return false; }
+        catch (InvalidDataException) { return true; }
+    }
+
+    /// <summary>两个并发创建者最多一人成功，不覆盖先写入的根文件。</summary>
+    private static async Task ProjectDirectoryCreateDoesNotOverwrite()
+    {
+        var parent = Path.Combine(Path.GetTempPath(), "mps-create-test-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(parent, "project");
+        try
+        {
+            var attempts = new[] { "first", "second" }.Select(title => Task.Run(() =>
+            {
+                try { return ProjectDirectory.Create(root, title).Title; }
+                catch (IOException) { return null; }
+            })).ToArray();
+            var results = await Task.WhenAll(attempts).WaitAsync(TimeSpan.FromSeconds(20));
+            Assert(results.Count(value => value is not null) == 1, "并发创建不能同时成功");
+            Assert(ProjectDirectory.Open(root).Title == results.Single(value => value is not null), "并发创建覆盖了已写入的项目");
+        }
+        finally
+        {
+            if (Directory.Exists(parent)) Directory.Delete(parent, recursive: true);
+        }
+    }
+
+    /// <summary>外发范围必须精确匹配账号、用途和文件内容，默认拒绝及过期均不能放行。</summary>
+    private static async Task ProjectOutboundAuthorizationIsExact()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "mps-authorization-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var project = ProjectDirectory.Create(root, "外发测试");
+            var asset = new MpsAssetReference { Path = "assets/source/fixture.txt" };
+            var path = ProjectDirectory.ResolvePath(root, asset.Path);
+            var content = Encoding.UTF8.GetBytes("approved local fixture");
+            await File.WriteAllBytesAsync(path, content);
+            asset.Sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
+            project.Assets.Add(asset);
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(project, root, "moark", "test", "vision", "review", asset.Id), "无授权应默认拒绝");
+            var grant = new MpsOutboundAuthorization
+            {
+                Provider = "moark", AccountAlias = "test", Capability = "vision", Purpose = "review",
+                AssetId = asset.Id, Sha256 = asset.Sha256, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+            };
+            project.Authorizations.Add(grant);
+            ProjectDirectory.Save(root, project);
+            var reopened = ProjectDirectory.Open(root);
+            Assert(await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "moark", "test", "vision", "review", asset.Id), "精确授权应放行");
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "sonnet.vip", "test", "vision", "review", asset.Id), "跨提供商应拒绝");
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "moark", "other", "vision", "review", asset.Id), "跨账号应拒绝");
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "moark", "test", "vision", "publish", asset.Id), "用途改变应拒绝");
+            await File.WriteAllTextAsync(path, "changed fixture");
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "moark", "test", "vision", "review", asset.Id), "内容哈希变化应拒绝");
+            await File.WriteAllBytesAsync(path, content);
+            reopened.Authorizations[0].ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
+            Assert(!await ProjectOutboundPolicy.IsAllowedAsync(reopened, root, "moark", "test", "vision", "review", asset.Id), "过期授权应拒绝");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>CLI 使用的白名单映射不传播假密钥、签名地址或错误原文。</summary>
+    private static void ProviderResponseDropsSensitiveFields()
+    {
+        const string fakeSecret = "fixture-secret-only";
+        const string fakeUrl = "https://example.invalid/media?signature=fixture-signature";
+        using var response = JsonDocument.Parse("""
+            {"task_id":"job_01","status":"success","price":1.25,"currency":"CNY",
+             "access_token":"fixture-secret-only","url":"https://example.invalid/media?signature=fixture-signature",
+             "error":"provider raw response"}
+            """);
+        var record = new ProviderRecord
+        {
+            TaskId = ProviderResponseMapper.SafeTaskId(response.RootElement, fakeSecret),
+            Status = ProviderResponseMapper.NormalizeStatus(response.RootElement) ?? "unknown"
+        };
+        ProviderResponseMapper.ApplyPrice(record, response.RootElement, null);
+        var stored = JsonSerializer.Serialize(record, JsonFiles.Options);
+        Assert(record.TaskId == "job_01" && record.Status == "success" && record.Price == 1.25m, "白名单字段映射错误");
+        Assert(!stored.Contains(fakeSecret, StringComparison.Ordinal) && !stored.Contains(fakeUrl, StringComparison.Ordinal) &&
+            !stored.Contains("provider raw response", StringComparison.Ordinal), "响应敏感字段进入任务记录");
+        using var echoed = JsonDocument.Parse("""{"task_id":"fixture-secret-only","status":"pending"}""");
+        Assert(ProviderResponseMapper.SafeTaskId(echoed.RootElement, fakeSecret) is null, "回显密钥不能作为任务号");
     }
 
     /// <summary>统一断言消息，避免引入额外测试框架和网络依赖。</summary>

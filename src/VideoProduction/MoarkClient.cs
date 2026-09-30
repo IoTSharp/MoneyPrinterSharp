@@ -301,39 +301,15 @@ public static class MoarkClient
     }
 
     /// <summary>解析已知状态，统一 failed/failure，未知内容不直接进入持久记录。</summary>
-    private static string? NormalizeStatus(JsonElement body)
-    {
-        var value = Text(body, "status");
-        return value?.ToLowerInvariant() switch
-        {
-            "success" or "succeeded" or "completed" => "success",
-            "failure" or "failed" => "failure",
-            "cancelled" or "canceled" => "cancelled",
-            "accepted" => "accepted",
-            "waiting" or "queued" or "pending" or "in_progress" or "running" or "processing" => "pending",
-            _ => null
-        };
-    }
+    private static string? NormalizeStatus(JsonElement body) => ProviderResponseMapper.NormalizeStatus(body);
 
     /// <summary>只保留数字费用和允许的币种；价格缺失或 null 时保留原有未知状态。</summary>
-    private static void ApplyPrice(ProviderRecord record, JsonElement body, decimal? headerCost)
-    {
-        if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("price", out var price) && price.ValueKind == JsonValueKind.Number && price.TryGetDecimal(out var amount) && amount is >= 0 and <= 1000000)
-        {
-            record.Price = amount;
-            record.Currency = Text(body, "currency")?.ToUpperInvariant() switch { "CNY" => "CNY", "USD" => "USD", _ => "UNKNOWN" };
-        }
-        else if (headerCost is >= 0 and <= 1000000) { record.Price = headerCost; record.Currency = "CNY"; }
-    }
+    private static void ApplyPrice(ProviderRecord record, JsonElement body, decimal? headerCost) =>
+        ProviderResponseMapper.ApplyPrice(record, body, headerCost);
 
     /// <summary>只接受格式有效且未回显密钥的任务编号。</summary>
-    private static string? SafeTaskId(JsonElement body, string credential)
-    {
-        var value = Text(body, "task_id");
-        if (value is null || value.Contains(credential, StringComparison.Ordinal)) return null;
-        try { ProviderTransport.ValidateTaskId(value); return value; }
-        catch (InvalidDataException) { return null; }
-    }
+    private static string? SafeTaskId(JsonElement body, string credential) =>
+        ProviderResponseMapper.SafeTaskId(body, credential);
 
     /// <summary>只按已经实测的输出结构取首个媒体地址，不递归遍历任意供应商字段。</summary>
     private static string? FindOutputUrl(JsonElement output)

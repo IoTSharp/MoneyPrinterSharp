@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -106,48 +105,9 @@ public static class CostReport
             Text(node, "status") ?? "unknown", price, currency?.ToUpperInvariant(), Number(node, "estimate_cny"));
     }
 
-    /// <summary>根据真实任务ID合并重复记录；同一任务的不同价格标为冲突而非相加。</summary>
+    /// <summary>保持既有命令行 API，委托共享费用汇总器。</summary>
     public static CostSummary Summarize(IEnumerable<CostObservation> source, HashSet<string>? used = null)
-    {
-        var records = source.Take(20001).ToList();
-        if (records.Count > 20000) throw new InvalidDataException("费用观察记录超过20000条。");
-        var result = new CostSummary();
-        var timer = Stopwatch.StartNew();
-        foreach (var group in records.GroupBy(r => r.Provider + ":" + (r.TaskId ?? "fingerprint:" + r.Fingerprint), StringComparer.Ordinal))
-        {
-            if (timer.Elapsed > TimeSpan.FromSeconds(30)) throw new TimeoutException("费用汇总超过30秒。");
-            var priced = group.Where(r => r.Price.HasValue && !string.IsNullOrWhiteSpace(r.Currency)).Select(r => (r.Price, r.Currency)).Distinct().ToList();
-            var first = group.First();
-            var entry = new CostEntry
-            {
-                Id = group.Key, TaskId = first.TaskId, Provider = first.Provider,
-                Kind = group.Select(r => r.Kind).FirstOrDefault(k => k != "unclassified") ?? "unclassified",
-                Model = group.Select(r => r.Model).FirstOrDefault(m => m != "unknown") ?? "unknown",
-                Observations = group.Count(), UsedInFinal = used is null ? null : used.Contains(group.Key) || first.TaskId is { } id && used.Contains(id),
-                Statuses = group.Select(r => r.Status).Distinct().Order(StringComparer.Ordinal).ToArray(),
-                EstimateCny = group.Max(r => r.EstimateCny) ?? 0,
-                Conflict = priced.Count > 1,
-                Price = priced.Count == 1 ? priced[0].Price : null,
-                Currency = priced.Count == 1 ? priced[0].Currency : null
-            };
-            result.Tasks.Add(entry);
-        }
-        // 小计从同一份去重列表派生，不再将模型小计重复加到总数。
-        foreach (var entry in result.Tasks)
-        {
-            if (entry.Conflict) result.ConflictCount++;
-            if (!entry.Price.HasValue) { result.UnknownCount++; result.UnknownEstimateCny += entry.EstimateCny; continue; }
-            var currency = entry.Currency!;
-            result.ConfirmedByCurrency[currency] = result.ConfirmedByCurrency.GetValueOrDefault(currency) + entry.Price.Value;
-            if (currency == "CNY")
-            {
-                result.ConfirmedCny += entry.Price.Value;
-                if (entry.UsedInFinal == true) result.FinalUsedCny = (result.FinalUsedCny ?? 0) + entry.Price.Value;
-                if (entry.UsedInFinal == false) result.TrialsOrUnusedCny = (result.TrialsOrUnusedCny ?? 0) + entry.Price.Value;
-            }
-        }
-        return result;
-    }
+        => CostAccounting.Summarize(source, used);
 
     /// <summary>读取有限长度的标量标识，不允许把链接或多行敏感正文当标识存档。</summary>
     private static string? Text(JsonElement node, string name)
@@ -180,37 +140,4 @@ public static class CostReport
             text.AppendLine($"| {task.Id.Replace('|', '_')} | {task.Kind.Replace('|', '_')} | {(task.Price.HasValue ? task.Price.Value.ToString("0.#####", CultureInfo.InvariantCulture) + " " + task.Currency : task.Conflict ? "价格冲突" : "待确认")} | {string.Join(", ", task.Statuses).Replace('|', '_')} |");
         return text.ToString();
     }
-}
-
-/// <summary>一份任务费用观察；用于导入、去重和离线验证。</summary>
-public sealed record CostObservation(string Provider, string? TaskId, string? Fingerprint, string Kind, string Model, string Status, decimal? Price, string? Currency, decimal? EstimateCny);
-
-/// <summary>去重后的单一任务，不保存原始API响应。</summary>
-public sealed class CostEntry
-{
-    public string Id { get; set; } = "";
-    public string Provider { get; set; } = "";
-    public string? TaskId { get; set; }
-    public string Kind { get; set; } = "";
-    public string Model { get; set; } = "";
-    public string[] Statuses { get; set; } = [];
-    public int Observations { get; set; }
-    public decimal? Price { get; set; }
-    public string? Currency { get; set; }
-    public decimal EstimateCny { get; set; }
-    public bool Conflict { get; set; }
-    public bool? UsedInFinal { get; set; }
-}
-
-/// <summary>实际费用与未知预算分离的汇总结果。</summary>
-public sealed class CostSummary
-{
-    public decimal ConfirmedCny { get; set; }
-    public Dictionary<string, decimal> ConfirmedByCurrency { get; set; } = [];
-    public int UnknownCount { get; set; }
-    public int ConflictCount { get; set; }
-    public decimal UnknownEstimateCny { get; set; }
-    public decimal? FinalUsedCny { get; set; }
-    public decimal? TrialsOrUnusedCny { get; set; }
-    public List<CostEntry> Tasks { get; set; } = [];
 }

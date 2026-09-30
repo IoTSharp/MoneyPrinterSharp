@@ -39,7 +39,7 @@ public sealed class ProviderLedgerEntry
 }
 
 /// <summary>通过不共享的文件句柄建立跨进程锁，锁文件保留以避免删除竞争。</summary>
-internal static class ProviderLocks
+public static class ProviderLocks
 {
     /// <summary>最多等待60次和15秒；取消或超时不进入提交临界区。</summary>
     public static async Task<FileStream> AcquireAsync(string path, CancellationToken ct)

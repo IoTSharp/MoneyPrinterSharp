@@ -4,21 +4,20 @@ using System.Text;
 namespace VideoProduction;
 
 /// <summary>确定性逐帧合成，使用源时间统一计算音频、主持人和字幕的播放速度。</summary>
-public static partial class MediaPipeline
+public static partial class MediaWorkflows
 {
     /// <summary>逐章完成截图、任务栏、主持人、字幕和配音合成，再无损拼接章节。</summary>
-    private static async Task RenderAsync(MediaTools tools, Arguments args)
+    public static async Task<string> RenderAsync(MediaTools tools, string manifestFile, string destination, bool allowUnsynced = false, string? font = null, Action<string>? progress = null)
     {
-        var manifestPath = MediaTools.ExistingFile(args.Required("manifest"));
+        var manifestPath = MediaTools.ExistingFile(manifestFile);
         var manifest = JsonFiles.Read<VideoManifest>(manifestPath);
         ValidateManifest(tools, manifest);
         var baseDirectory = Path.GetDirectoryName(manifestPath)!;
-        var output = MediaTools.NewOutput(args.Required("output"));
+        var output = MediaTools.NewOutput(destination);
         if (!Path.GetExtension(output).Equals(".mp4", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("render输出必须是.mp4。");
         var reportPath = output + ".render.json";
         if (File.Exists(reportPath)) throw new IOException("渲染报告已存在，拒绝覆盖。");
         using var scratch = new MediaScratch(Path.GetDirectoryName(output)!);
-        var font = args.Optional("font");
         if (font is null && OperatingSystem.IsWindows() && File.Exists(@"C:\Windows\Fonts\msyh.ttc")) font = @"C:\Windows\Fonts\msyh.ttc";
         if (font is not null)
         {
@@ -46,7 +45,7 @@ public static partial class MediaPipeline
             foreach (var item in scene.Clips)
             {
                 tools.Remaining();
-                if (!item.LipSynced && !args.Has("allow-unsynced")) throw new InvalidDataException($"{scene.Id}存在未同步口型素材；明确使用--allow-unsynced才可导出标注草稿。");
+                if (!item.LipSynced && !allowUnsynced) throw new InvalidDataException($"{scene.Id}存在未同步口型素材；明确允许未同步口型后才可导出标注草稿。");
                 unsynced |= !item.LipSynced;
                 if (sourceCursor >= audio.Duration - .005) break;
                 var video = await tools.ProbeAsync(ResolveMedia(item.Video, baseDirectory));
@@ -62,7 +61,7 @@ public static partial class MediaPipeline
             var assName = $"chapter-{sceneIndex:D3}.ass";
             var assPath = Path.Combine(scratch.DirectoryPath, assName);
             var captionsEstimated = scene.Captions.Count == 0;
-            WriteAss(tools, assPath, manifest, scene, audio.Duration, rate, args.Has("allow-unsynced") && clips.Any(item => !item.LipSynced));
+            WriteAss(tools, assPath, manifest, scene, audio.Duration, rate, allowUnsynced && clips.Any(item => !item.LipSynced));
             var chapterName = $"chapter-{sceneIndex:D3}.mp4";
             var chapterPath = Path.Combine(scratch.DirectoryPath, chapterName);
             var inputArgs = new List<string> { "-loop", "1", "-framerate", manifest.Fps.ToString(CultureInfo.InvariantCulture), "-i", screen, "-i", audio.Path };
@@ -71,7 +70,7 @@ public static partial class MediaPipeline
             var graph = BuildSceneGraph(tools, manifest, clips, audio.Duration, rate, assName, font is not null);
             File.WriteAllText(Path.Combine(scratch.DirectoryPath, graphName), graph, new UTF8Encoding(false));
             inputArgs.AddRange(["-filter_complex_script", graphName, "-map", "[video]", "-map", "[audio]", "-t", MediaTools.N(duration), "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-r", manifest.Fps.ToString(CultureInfo.InvariantCulture), "-fps_mode", "cfr", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", "-threads", "2", "-movflags", "+faststart", "-n", chapterPath]);
-            Console.WriteLine($"合成 {sceneIndex + 1}/{manifest.Scenes.Count}：{scene.Title}，{MediaTools.N(duration)} 秒，速度 {MediaTools.N(rate)}");
+            progress?.Invoke($"合成 {sceneIndex + 1}/{manifest.Scenes.Count}：{scene.Title}，{MediaTools.N(duration)} 秒，速度 {MediaTools.N(rate)}");
             await tools.FfmpegAsync(inputArgs, scratch.DirectoryPath);
             var rendered = await tools.ProbeAsync(chapterPath);
             if (rendered.Video?.Codec != "h264" || rendered.Audio?.Codec != "aac" || Math.Abs(rendered.Duration - duration) > .16) throw new InvalidDataException($"{scene.Id}章节输出编码或时长不符。");
@@ -86,7 +85,7 @@ public static partial class MediaPipeline
         if (durationError > .25 + manifest.Scenes.Count / (double)manifest.Fps) throw new InvalidDataException("拼接成片时长偏离音频时间轴。");
         File.Move(assembled, output);
         JsonFiles.Write(reportPath, new { manifest = manifestPath, output, output_status = unsynced ? "draft-unsynced" : "rendered", duration = final.Duration, expected_duration = totalSeconds, duration_error_seconds = durationError, target_seconds = manifest.TargetSeconds, target_difference_seconds = final.Duration - manifest.TargetSeconds, width = manifest.Width, height = manifest.Height, fps = manifest.Fps, ffmpeg = tools.Ffmpeg, source_time_contract = "clips.offset/duration和captions.start/end均为源秒数；所有呈现时间统一除以audio_rate。", chapters, quality_note = "口型同步标记来自清单，须用真实视频审核；自动合成不证明语义口型、脸部及细教鞭完好。" });
-        Console.WriteLine(output);
+        return output;
     }
 
     /// <summary>校验明确数量上限及画布参数，防止滤镜链或资源规模失控。</summary>
@@ -152,7 +151,7 @@ public static partial class MediaPipeline
         var text = new StringBuilder($"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Caption,Microsoft YaHei,{fontSize},&H00FFFFFF,&H00FFFFFF,&H00132230,&HA0132230,0,0,0,0,100,100,0,0,3,8,0,2,28,{Math.Min(width / 3, 350)},{manifest.TaskbarHeight + 28},1\nStyle: Title,Microsoft YaHei,{fontSize + 4},&H00FFFFFF,&H00FFFFFF,&H00152232,&H00152232,-1,0,0,0,100,100,0,0,3,9,0,7,28,28,25,1\nStyle: Taskbar,Microsoft YaHei,{Math.Max(12, fontSize - 5)},&H004F3A28,&H004F3A28,&H00EAF0F7,&H00EAF0F7,0,0,0,0,100,100,0,0,1,0,0,7,24,24,{top + Math.Max(5, manifest.TaskbarHeight / 3)},1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n");
         var end = sourceDuration / rate;
         AddAss(text, 0, end, "Title", scene.Title);
-        if (manifest.TaskbarHeight > 0) AddAss(text, 0, end, "Taskbar", "▣  木垒非现场执法系统                         AI 生成主持人与配音" + (unsynced ? "  ·  未同步口型草稿" : ""));
+        if (manifest.TaskbarHeight > 0) AddAss(text, 0, end, "Taskbar", "MoneyPrinter#  ·  " + manifest.Title + (unsynced ? "  ·  未同步口型草稿" : ""));
         var cues = scene.Captions.Count > 0 ? scene.Captions : EstimateCaptions(tools, scene.Narration, sourceDuration);
         foreach (var cue in cues.Take(400))
         {

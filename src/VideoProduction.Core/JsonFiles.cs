@@ -34,4 +34,18 @@ public static class JsonFiles
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
+
+    /// <summary>首次创建根文件时原子写入，不覆盖并发出现的同名文件。</summary>
+    public static void WriteNew<T>(string path, T value)
+    {
+        path = Path.GetFullPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllText(temporary, JsonSerializer.Serialize(value, Options));
+            File.Move(temporary, path, false);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
 }

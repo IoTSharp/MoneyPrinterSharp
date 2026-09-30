@@ -17,7 +17,7 @@
 | `authorizations[]` | `provider`, `account_alias`, `asset_scope`, `source_scope`, `budget_ref` | 默认无外发权限；不存密钥 |
 | `model_routes[]` | `capability`, `provider`, `account_alias`, `model_id`, `locked` | 锁定不可用时暂停 |
 
-会话正文、任务摘要、账本、版本快照采用项目根下分文件，并由 `project.mps.json` 的相对引用连接。完整目录契约、原子保存和兼容实现属于里程碑 B；此处固定语义和升级原则。未知扩展字段在读取、保存时应保留或给出不可迁移报告，不能静默丢失。
+会话正文、任务摘要、账本、版本快照采用项目根下分文件，并由 `project.mps.json` 的相对引用连接。[项目目录契约](../milestone-b/project-directory.md)已实现根文件和素材相对路径的最小模型；原子版本快照与完整迁移仍属于里程碑 B。未知扩展字段在读取、保存时应保留或给出不可迁移报告，不能静默丢失。
 
 ## v1 `manifest.json` 迁移
 
