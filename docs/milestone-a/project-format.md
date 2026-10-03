@@ -8,16 +8,16 @@
 | --- | --- | --- |
 | `project` | `id`, `title`, `created_utc`, `schema_version` | ID 稳定；升级只增加版本 |
 | `profiles[]` | `id`, `width`, `height`, `fps_num`, `fps_den` | 16:9、9:16 分别保存布局；帧率为有理数 |
-| `assets[]` | `id`, `path`, `sha256`, `source`, `media_info` | 路径相对；哈希核对后才能重定位 |
+| `assets[]` | `id`, `path`, `sha256`, `source`, `media`, `size_bytes`, `indexed_utc`, `is_reachable` | 路径相对；哈希核对后才能重定位 |
 | `tracks[]` | `id`, `kind`, `order`, `muted`, `hidden` | 至少支持屏幕、主持人、旁白、音乐、字幕 |
 | `clips[]` | `id`, `track_id`, `asset_id`, `timeline_start`, `source_in`, `source_out`, `speed`, `properties` | 坐标统一为有理数时间或整数音频采样；范围非负且有界 |
-| `sessions[]` | `id`, `title`, `record_ref` | 多会话引用同一资产和轨道 |
+| `sessions/` | `mps.project.sessions` 快照中的 `id`, `title`, `messages` | 多会话引用同一共享资产、轨道、预算和阶段状态 |
 | `stages[]` | `skill_id`, `state`, `artifact_refs`, `invalidated_by` | 保持 11 个已有技能 ID |
 | `claims[]` | `id`, `source_ref`, `limitations` | 成片主张可回溯 |
 | `authorizations[]` | `id`, `project_id`, `provider`, `account_alias`, `model`, `capability`, `purpose`, `expires_at`, `scopes[]`, `budget_ref` | 默认无外发权限；逐维度匹配；不存密钥 |
 | `model_routes[]` | `capability`, `provider`, `account_alias`, `model_id`, `locked` | 锁定不可用时暂停 |
 
-会话正文、任务摘要、账本、版本快照采用项目根下分文件，并由 `project.mps.json` 的相对引用连接。[项目目录契约](../milestone-b/project-directory.md)已实现根文件和素材相对路径的最小模型；原子版本快照与完整迁移仍属于里程碑 B。未知扩展字段在读取、保存时应保留或给出不可迁移报告，不能静默丢失。
+会话正文、任务摘要、账本、版本快照采用项目根下分文件，并由 `project.mps.json` 的相对引用连接。[项目目录契约](../milestone-b/project-directory.md)已实现根文件、素材相对路径、原子版本、会话快照和旧清单迁移。未知扩展字段在读取、保存时应保留或给出不可迁移报告，不能静默丢失。
 
 授权 `scopes[]` 对应阶段 A 可执行契约的 `kind`（Asset/Source/Text）、`project_path` 及源码 `start_line/end_line`；媒体或文本为完整逻辑对象，源码为明确的包含首尾行区间。`budget_ref` 必须解析到可信账本中的金额、币种、已占用额和预留关系；当前离线授权契约只验证 CNY 快照，不能据此宣称多币种或并发扣账已实现。相对逻辑路径不经 URL 解码，实际文件句柄、内容哈希及外发字节绑定在后续发送层校验。
 

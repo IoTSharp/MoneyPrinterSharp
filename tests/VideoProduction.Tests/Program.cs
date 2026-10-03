@@ -25,8 +25,12 @@ public static class Program
             await ProjectDirectoryCreateDoesNotOverwrite();
             await ProjectOutboundAuthorizationIsExact();
             TimelineCoordinatesTests.Run();
+            TimelineModelTests.Run();
+            await AssetIndexTests.RunAsync(deadline.Token);
+            await MilestoneBFoundationsTests.RunAsync(deadline.Token);
+            ProjectSessionPersistenceTests.Run();
             await SecurityContractTests.RunAsync(deadline.Token);
-            Console.WriteLine("离线回归测试通过：费用去重、未知费用隔离、清单边界、项目复制与移动、外发哈希预检、时间坐标、安全契约与响应脱敏。");
+            Console.WriteLine("离线回归测试通过：费用与脱敏、清单边界、项目复制移动、素材索引、会话/阶段快照、证据迁移、编辑撤销/原子版本、时间坐标、多轨模型与安全契约。");
             return 0;
         }
         catch (Exception error)

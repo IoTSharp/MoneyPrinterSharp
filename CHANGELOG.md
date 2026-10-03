@@ -4,6 +4,22 @@
 
 ## 未发布
 
+### 本轮新增（2026-10-03）
+
+- 完成 P1 里程碑 B（003-013）共享核心与项目持久化：新增旧版 `VideoManifest` 到多轨项目的显式迁移，保留章节源路径、证据、旁白文本、字幕及口型声明，并返回不可迁移字段报告。
+- 新增有界素材索引：按项目相对路径、大小、SHA-256、容器/编解码、分辨率、时长、帧率和音频参数建立身份；同名不同内容不混淆，失联或内容变化只附加诊断并保留引用；FFprobe 仅接受显式已确认路径。
+- 新增项目多会话与十阶段状态机：素材、轨道、阶段产物、预算只在共享状态保存一次；会话消息独立；状态支持未开始、进行中、待复核、通过、失败、失效，阶段变化按顺序使受影响下游失效。`mps.project.sessions` 快照支持 JSON 往返、预算恢复、稳定 ID 和共享引用重建。
+- 新增统一编辑命令层（移动、裁切、分割、排序、字幕、音量）以及撤销/重做；命令只修改项目状态，不改原素材。新增原子项目存储、命名版本、数量/体积上限、最近完整快照恢复和项目写入租约，重复窗口不能覆盖项目。
+- 新增证据记录和敏感 URL 拒绝、Unicode NFC/中英文换行及字体回退、带轨道/片段路径的项目诊断校验。项目素材引用保存索引元数据，项目目录继续拒绝未知字段、越界路径、非法时间/速度、重复 ID 和父轨道循环。
+- 新增离线回归：素材索引、会话/阶段快照、并发锁、迁移、编辑撤销重做、原子版本、证据脱敏和详细诊断均纳入 `tests/VideoProduction.Tests`；未触发网络或付费请求。
+- 验证：`dotnet build src/VideoProduction/VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false` 和 `dotnet build tests/VideoProduction.Tests/VideoProduction.Tests.csproj --disable-build-servers -p:UseSharedCompilation=false` 均通过（0 警告、0 错误）；`dotnet run --project tests/VideoProduction.Tests/VideoProduction.Tests.csproj --no-build -p:UseSharedCompilation=false` 通过。阶段 A 的 Windows 10/11 实机证据仍未完成，不能据此宣称阶段出口 A 已通过。
+
+### 本轮新增（2026-10-02）
+
+- 完成里程碑 B 多轨项目模型（原 #3）：`MpsProjectDocument` 现在可保存画布配置、当前画布、屏幕/主持人/旁白/音乐/字幕/叠加轨道、父子层级、静音/隐藏状态及片段引用。片段使用 `{num, den}` 有理数时间、`speed_num/speed_den` 变速和受限的增益、布局、字幕、主持人抠像与口型属性；媒体片段外键由项目素材索引校验，字幕和主持人属性按轨道类型校验。
+- 项目目录打开/保存接入多轨校验，拒绝重复或缺失 ID、错误素材外键、非法坐标/速度/帧率、父级循环、越界属性和嵌套未知字段；不同轨道的片段重叠保留给后续重叠策略任务。新增离线模型回归覆盖五类轨道 JSON 往返、1/3 秒精确值、父子轨道、项目保存重开及上述拒绝场景。
+- 验证：`dotnet build src/VideoProduction/VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false` 通过（0 警告、0 错误）；`dotnet run --project tests/VideoProduction.Tests/VideoProduction.Tests.csproj -p:UseSharedCompilation=false` 通过。阶段 A 的 Windows 10/11 实机证据仍未完成，不能据此宣称阶段出口 A 已通过。
+
 ### 本轮新增（2026-09-30）
 
 - 建立 `src/VideoProduction.Core` 共享 .NET 10 类库，CLI 与桌面程序可直接调用清单校验、费用汇总、FFmpeg/FFprobe 媒体探测与 split/key/render/verify 流程、进程运行及模型。既有 `VideoProduction` 命令入口和旧清单保持兼容；迁移时清除了媒体渲染中的外部产品硬编码文案。CLI `help` 与演示清单 `validate --draft` 返回 0。

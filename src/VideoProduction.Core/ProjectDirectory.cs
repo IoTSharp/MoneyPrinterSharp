@@ -13,6 +13,10 @@ public sealed class MpsProjectDocument
     public string Title { get; set; } = "未命名项目";
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
     public List<MpsAssetReference> Assets { get; set; } = [];
+    public List<MpsProjectProfile> Profiles { get; set; } = [];
+    public string? ActiveProfileId { get; set; }
+    public List<MpsTrack> Tracks { get; set; } = [];
+    public List<MpsEvidenceRecord> Evidence { get; set; } = [];
     public List<MpsOutboundAuthorization> Authorizations { get; set; } = [];
 }
 
@@ -23,6 +27,11 @@ public sealed class MpsAssetReference
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Path { get; set; } = "";
     public string? Sha256 { get; set; }
+    public long? SizeBytes { get; set; }
+    public AssetMediaMetadata? Media { get; set; }
+    public string Source { get; set; } = "local";
+    public DateTimeOffset? IndexedUtc { get; set; }
+    public bool IsReachable { get; set; } = true;
 }
 
 /// <summary>一次明确的项目素材外发授权；账号、用途和素材哈希均须匹配。</summary>
@@ -56,7 +65,12 @@ public static class ProjectDirectory
         root = Path.GetFullPath(root);
         if (Directory.Exists(root) && Directory.EnumerateFileSystemEntries(root).Take(1).Any())
             throw new IOException("项目目录非空，拒绝覆盖。");
-        var project = new MpsProjectDocument { Title = title };
+        var project = new MpsProjectDocument
+        {
+            Title = title,
+            Profiles = [new MpsProjectProfile { Id = "landscape" }],
+            ActiveProfileId = "landscape"
+        };
         Validate(project, root, deadline.Token);
         Directory.CreateDirectory(root);
         foreach (var folder in Folders)
@@ -133,6 +147,7 @@ public static class ProjectDirectory
             string.IsNullOrWhiteSpace(project.Title) || project.Title.Length > 200 ||
             project.Title.Any(char.IsControl) || project.CreatedUtc == default ||
             project.Assets is null || project.Assets.Count > 4096 ||
+            project.Profiles is null || project.Tracks is null || project.Evidence is null ||
             project.Authorizations is null || project.Authorizations.Count > 4096)
             throw new InvalidDataException("项目根文件格式或规模无效。");
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -142,7 +157,13 @@ public static class ProjectDirectory
             cancellationToken.ThrowIfCancellationRequested();
             if (timer.Elapsed > TimeSpan.FromSeconds(5)) throw new TimeoutException("项目素材引用校验超时。");
             if (asset is null || !Guid.TryParseExact(asset.Id, "N", out _) || !ids.Add(asset.Id) ||
-                asset.Sha256 is not null && (asset.Sha256.Length != 64 || asset.Sha256.Any(c => !char.IsAsciiHexDigit(c))))
+                asset.Sha256 is not null && (asset.Sha256.Length != 64 || asset.Sha256.Any(c => !char.IsAsciiHexDigit(c))) ||
+                asset.SizeBytes is < 0 || !ValidLabel(asset.Source, 256) ||
+                asset.Media is { } media && (!ValidOptionalLabel(media.Container, 128) || !ValidOptionalLabel(media.VideoCodec, 128) ||
+                    !ValidOptionalLabel(media.AudioCodec, 128) || media.Width is < 0 or > 7680 || media.Height is < 0 or > 4320 ||
+                    !double.IsFinite(media.DurationSeconds) || media.DurationSeconds < 0 || media.DurationSeconds > 86_400 ||
+                    !double.IsFinite(media.FrameRate) || media.FrameRate < 0 || media.FrameRate > 1000 ||
+                    media.AudioChannels is < 0 or > 256 || media.AudioSampleRate is < 0 or > 384_000))
                 throw new InvalidDataException("项目素材引用无效或重复。");
             _ = ResolvePath(root, asset.Path, cancellationToken);
         }
@@ -158,9 +179,18 @@ public static class ProjectDirectory
                 grant.ExpiresUtc == default)
                 throw new InvalidDataException("项目外发授权无效。");
         }
+        MpsTimelineValidation.Validate(project, cancellationToken);
+        MpsEvidenceValidation.Validate(project, cancellationToken);
     }
 
     /// <summary>限制授权标识长度，拒绝控制字符和可误入日志的多行文本。</summary>
     private static bool ValidLabel(string? value) =>
         !string.IsNullOrWhiteSpace(value) && value.Length <= 128 && !value.Any(char.IsControl);
+
+    /// <summary>按字段专属上限校验来源和其他可展示标签。</summary>
+    private static bool ValidLabel(string? value, int maxLength) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength && !value.Any(char.IsControl);
+
+    private static bool ValidOptionalLabel(string? value, int maxLength) =>
+        value is null || value.Length <= maxLength && !value.Any(char.IsControl);
 }
