@@ -10,6 +10,7 @@
 - `cost-accounting.md`：任务号去重、币种分开、未知值与包含关系。
 - [`milestone-a/acceptance-matrix.md`](milestone-a/acceptance-matrix.md)：V1 需求到 UI、领域责任、验证和交付产物的矩阵。
 - [`milestone-a/provider-contracts.md`](milestone-a/provider-contracts.md)：首批提供商公开契约与未知边界。
+- [`milestone-c/provider-adapter-contracts.md`](milestone-c/provider-adapter-contracts.md)：能力分类、模型描述符、适配器接口与离线模拟器。
 - [`milestone-a/desktop-adr.md`](milestone-a/desktop-adr.md)：Avalonia + AtomUI 桌面选型、原型证据与待验收边界。
 - [`milestone-a/project-format.md`](milestone-a/project-format.md)、[`security-data-flow.md`](milestone-a/security-data-flow.md)、[`nonfunctional-baseline.md`](milestone-a/nonfunctional-baseline.md)：项目格式、安全边界与有界资源草案。
 

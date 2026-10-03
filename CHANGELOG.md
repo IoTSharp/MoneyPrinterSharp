@@ -6,6 +6,10 @@
 
 ### 本轮新增（2026-10-03）
 
+- 完成里程碑 C 的能力与提供商基础契约（原路线图 #003、#004、#005、#021）：新增七类能力描述、输入/输出/用途与证据状态；新增不会根据模型名称猜测能力的模型描述符，显式保留未知模态、限制、执行方式和价格；新增目录、账号状态、能力探测、任务提交/状态/取消、产物下载、用量和错误映射的分层 `IProviderAdapter` 契约及有界参数校验。
+- 新增完全离线的 `OfflineProviderSimulator`：覆盖分页目录、响应格式标记、401/403 权限分层、限流和总请求上限、稳定幂等任务号、异步成功/失败、费用/用量、取消和短期签名输出；签名地址只在内存返回值中出现，不进入状态、用量、日志或持久化文件。实现与验证说明见 [里程碑 C 契约记录](docs/milestone-c/provider-adapter-contracts.md)。
+- 新增能力/模型、适配器和离线模拟器回归，测试只使用本地对象和可注入时钟，不访问网络或付费服务；同步接入 `tests/VideoProduction.Tests` 离线入口。完成验证：`dotnet build src/VideoProduction/VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false`、`dotnet build tests/VideoProduction.Tests/VideoProduction.Tests.csproj --disable-build-servers -p:UseSharedCompilation=false` 与 `dotnet run --project tests/VideoProduction.Tests/VideoProduction.Tests.csproj --no-build -p:UseSharedCompilation=false` 均通过（0 警告、0 错误；离线回归通过）。
+- 按路线图规则移除上述四项已验证工作并将后续未完成项连续重编号；里程碑 C 现为 `003-020`，阶段 D-J 的范围同步更新。Moark、sonnet.vip 的真实账号、价格和生产调用仍保持未知，未标为已接通。
 - 完成 P1 里程碑 B（003-013）共享核心与项目持久化：新增旧版 `VideoManifest` 到多轨项目的显式迁移，保留章节源路径、证据、旁白文本、字幕及口型声明，并返回不可迁移字段报告。
 - 新增有界素材索引：按项目相对路径、大小、SHA-256、容器/编解码、分辨率、时长、帧率和音频参数建立身份；同名不同内容不混淆，失联或内容变化只附加诊断并保留引用；FFprobe 仅接受显式已确认路径。
 - 新增项目多会话与十阶段状态机：素材、轨道、阶段产物、预算只在共享状态保存一次；会话消息独立；状态支持未开始、进行中、待复核、通过、失败、失效，阶段变化按顺序使受影响下游失效。`mps.project.sessions` 快照支持 JSON 往返、预算恢复、稳定 ID 和共享引用重建。

@@ -7,6 +7,8 @@ description: Compare image, presenter-motion, TTS, lip-sync, and compositing pro
 
 先读 [共享制作契约](../video-production-series/references/production-contract.md) 和 [成本核算口径](../video-production-series/references/cost-accounting.md)。本阶段做能力核验，不替用户提交付费任务。
 
+目录条目使用 `MpsModelDescriptor` 的显式模态、能力、限制、执行方式、价格和证据状态；能力输入/输出/用途使用 `MpsCapabilityDescriptor`。`unknown` 表示事实缺失，不能根据模型 ID 或展示名补全；提供商分支通过 `IProviderAdapter` 的目录、探测和任务契约接入，技能本身只依赖能力分类。
+
 ## 比较维度
 
 - 输入：静态图、绿幕视频、音频、外部图片、外部音频、界面视频、透明输出。
