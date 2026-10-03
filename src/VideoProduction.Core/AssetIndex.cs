@@ -313,15 +313,15 @@ public sealed class AssetIndexer
         var buffer = new byte[1024 * 1024];
         var chunks = 0L;
         var maxChunks = Math.Max(1L, stream.Length / buffer.Length + (stream.Length % buffer.Length == 0 ? 0 : 1));
-        while (true)
+        for (; chunks <= maxChunks; chunks++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (clock.Elapsed >= timeout) throw new TimeoutException("单个素材哈希超过索引墙钟上限。");
-            if (++chunks > maxChunks + 1) throw new IOException("素材读取块数超过文件长度推算上限。");
             var count = await stream.ReadAsync(buffer.AsMemory(), cancellationToken);
             if (count == 0) break;
             hasher.AppendData(buffer, 0, count);
         }
+        if (chunks > maxChunks) throw new IOException("素材读取块数超过文件长度推算上限。");
         return Convert.ToHexStringLower(hasher.GetHashAndReset());
     }
 

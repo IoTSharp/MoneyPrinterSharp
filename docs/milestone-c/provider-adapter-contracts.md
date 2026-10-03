@@ -18,10 +18,25 @@
 
 `src/VideoProduction.Core/OfflineProviderSimulator.cs` 提供内存中的分页目录、账号权限、401/403 分离、限流、总请求上限、稳定幂等任务号、异步成功/失败、费用、用量分页、响应格式标记和短期签名输出。模拟器使用可注入时钟和取消令牌；轮询同时受次数、时长和总请求边界约束，签名地址只作为一次性返回值存在，不进入状态、用量或日志。
 
+## 账号、连接边界与目录事实
+
+`src/VideoProduction.Core/ProviderAccountConfiguration.cs` 只保存提供商、账号别名、启用状态和 Windows Credential Manager 目标名；`ProviderAccountConfigurationSet` 限制账号数量、拒绝重复别名/凭据目标并维护当前选择，脱敏快照拒绝未知字段。凭据值、请求头和原始响应不会进入配置或项目。
+
+`src/VideoProduction.Core/ProviderConnectionBoundary.cs` 将 API 根地址限制为无凭据 HTTPS，并要求精确主机白名单、TLS 1.2/1.3、有限响应（最多 64 MiB）和有限请求超时；代理只能是无凭据的本机回环地址。客户端关闭自动重定向、Cookie 和环境代理继承，目标 URI 复用主机/端口校验，认证重定向被拒绝。
+
+`src/VideoProduction.Core/ModelCatalogCache.cs` 通过 `IProviderCatalogAdapter` 读取有界分页目录，保留来源、供应商版本、观察时间和 TTL；游标重复、页数/模型数超限或读取失败时保留上一份缓存，不根据模型名称推断能力。`ProviderAccountAvailability.cs` 将账号存在、模型存在、权限、余额、配额和区域分别记录为三态事实；401、403、余额不足和配额耗尽不会被压成模型不存在，查询不到的字段保持未知。
+
+`src/VideoProduction.Core/ProviderModelRouting.cs` 提供只读的自动推荐和人工锁定解析：推荐只接受账号可用且能力证据为账号可调用/实测的候选，硬预算下未知价格不可入选；锁定模型缺失或不可用时返回暂停状态，要求用户选择，不自动跨提供商切换。
+
 ## 验证
 
 - `tests/VideoProduction.Tests/ProviderCapabilityTests.cs`：七类能力、输入/输出/用途分离、未知模型、价格/限制往返和 JSON 数字枚举/未知字段拒绝。
 - `tests/VideoProduction.Tests/ProviderAdapterContractTests.cs`：接口分层、请求边界、秘密/路径拒绝、未知能力不推断和分页元数据。
+- `tests/VideoProduction.Tests/ProviderAccountConfigurationTests.cs`：多账号选择、凭据目标引用、重复/控制字符拒绝、脱敏快照和取消边界。
+- `tests/VideoProduction.Tests/ProviderConnectionBoundaryTests.cs`：HTTPS/TLS、精确主机、认证重定向、回环代理、响应大小和有限超时。
+- `tests/VideoProduction.Tests/ModelCatalogCacheTests.cs`：分页、来源/版本/观察时间、TTL、失败保留旧快照和分页上限。
+- `tests/VideoProduction.Tests/ProviderAccountAvailabilityTests.cs`：401/403、余额/配额分离、模型存在性独立更新和有界状态表。
+- `tests/VideoProduction.Tests/ProviderModelRoutingTests.cs`：硬预算、未知费用/能力、确定性推荐和锁定暂停。
 - `tests/VideoProduction.Tests/OfflineProviderSimulatorTests.cs`：分页、响应格式、401/403、成功/失败异步任务、费用、幂等、签名地址脱敏、限流、总请求上限和取消。
 
 本轮验证命令和结果见根目录 `CHANGELOG.md`；这些离线测试不访问网络，也不触发付费请求。Moark、sonnet.vip 的真实账号可用性、价格和生产接口仍需后续授权验证。

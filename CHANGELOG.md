@@ -6,6 +6,9 @@
 
 ### 本轮新增（2026-10-03）
 
+- 完成里程碑 C 的账号与目录后续（原路线图 #003、#004、#005、#006、#010、#011）：新增 `ProviderAccountConfigurationSet` 多账号配置与当前选择，凭据只保存 Windows Credential Manager 目标引用；新增 API 连接边界，校验 HTTPS/TLS、精确目标主机、认证重定向、回环代理、响应大小和有限超时；新增公开模型目录缓存，支持有界分页、来源/版本/TTL，刷新失败保留旧缓存；新增账号可用性事实表，将账号/模型存在、权限、余额、配额和区域分开记录，401、403、余额不足和未知状态不互相误判；新增推荐与人工锁定解析，硬预算或能力证据不足时不自动选择，锁定失效时暂停交由用户选择。
+- 新增账号配置、连接边界、目录缓存、账号可用性和模型路由的离线合同测试，并接入 `tests/VideoProduction.Tests` 统一入口。测试不访问网络、Windows Credential Manager 或付费服务；模型目录适配器只使用内存分页对象，连接响应仅使用本地 `StringContent`。为满足有界执行要求，目录分页、响应读取和素材哈希有页数/块数/大小/墙钟/取消边界，账号状态存储有条目上限和取消边界。
+- 完成验证：`dotnet build src/VideoProduction/VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false`、`dotnet build tests/VideoProduction.Tests/VideoProduction.Tests.csproj --disable-build-servers -p:UseSharedCompilation=false` 与 `dotnet run --project tests/VideoProduction.Tests/VideoProduction.Tests.csproj --no-build -p:UseSharedCompilation=false` 均通过（0 警告、0 错误；离线回归通过）。本次未发起真实账号请求、付费探测或远端推送；Moark、sonnet.vip 的账号权限、价格与生产接口仍保持未知。
 - 完成里程碑 C 的能力与提供商基础契约（原路线图 #003、#004、#005、#021）：新增七类能力描述、输入/输出/用途与证据状态；新增不会根据模型名称猜测能力的模型描述符，显式保留未知模态、限制、执行方式和价格；新增目录、账号状态、能力探测、任务提交/状态/取消、产物下载、用量和错误映射的分层 `IProviderAdapter` 契约及有界参数校验。
 - 新增完全离线的 `OfflineProviderSimulator`：覆盖分页目录、响应格式标记、401/403 权限分层、限流和总请求上限、稳定幂等任务号、异步成功/失败、费用/用量、取消和短期签名输出；签名地址只在内存返回值中出现，不进入状态、用量、日志或持久化文件。实现与验证说明见 [里程碑 C 契约记录](docs/milestone-c/provider-adapter-contracts.md)。
 - 新增能力/模型、适配器和离线模拟器回归，测试只使用本地对象和可注入时钟，不访问网络或付费服务；同步接入 `tests/VideoProduction.Tests` 离线入口。完成验证：`dotnet build src/VideoProduction/VideoProduction.csproj --disable-build-servers -p:UseSharedCompilation=false`、`dotnet build tests/VideoProduction.Tests/VideoProduction.Tests.csproj --disable-build-servers -p:UseSharedCompilation=false` 与 `dotnet run --project tests/VideoProduction.Tests/VideoProduction.Tests.csproj --no-build -p:UseSharedCompilation=false` 均通过（0 警告、0 错误；离线回归通过）。
