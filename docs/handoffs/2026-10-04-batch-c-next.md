@@ -10,7 +10,7 @@
 
 - 起始基线：`7689a08ccb26ee575f82eeac08b3fe3bc4461305`。
 - 本批实现提交：`2ab6542`（已推送到 `origin/main`）。
-- 最终交接提交与新会话启动基线：`9a5686a50622ee42fe95c6820d9ddb9135dcd6d3`（已推送到 `origin/main`）。
+- 最终交接基线：本文件随最后一条交接提交进入 `origin/main`；新会话必须用 `git log -1 --format=%H -- docs/handoffs/2026-10-04-batch-c-next.md` 找到该提交，并确认它等于 `git rev-parse HEAD` 与 `git rev-parse origin/main`。
 - 工作区：`D:\Uixe\MoneyPrinterSharp`；产品仓库为 `MoneyPrinterSharp`，产品名为 `MoneyPrinter#`。
 - 本会话未访问真实供应商、Windows Credential Manager、账号权限或付费接口；未提交生产素材、原始响应或签名下载地址。
 
