@@ -1,5 +1,6 @@
 ---
 name: video-03-screenplay
+version: 1.0.0
 description: Write a production-ready Chinese software explainer screenplay, shot list, captions, presenter actions, and evidence-linked narration.
 ---
 
@@ -22,3 +23,7 @@ description: Write a production-ready Chinese software explainer screenplay, sho
 ## 阻断条件
 
 文本与功能证据不一致、镜头缺真实屏幕来源、人物会遮挡关键区域、或章节无法按自然语义切分时，不进入模型提交。
+
+## 阶段执行契约
+
+`video-03-screenplay` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为叙事规划和功能证据；前置证据为叙事通过和镜头证据 ID。允许 C# 工具为 `MpsProductionPlan`、`ProjectDirectory`、`ClipTimeMapping`。阶段产物 `screenplay.json` 包含 `version`、`frozen`、`scenes`、`text_hash`；`shot-list.json` 包含 `scenes`、`evidence_ids`、`screens`、`safe_regions`。旧 CLI `project.json` 继续使用 `Models.cs`，不要增加未知字段。冻结文本、真实屏幕来源和可读布局质量门未通过时回退 `video-02-narrative-plan`。

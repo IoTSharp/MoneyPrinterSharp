@@ -41,7 +41,13 @@ public static class Program
             await ProviderAsyncTaskRecoveryTests.RunAsync(deadline.Token);
             PricingBudgetLedgerTests.Run();
             SkillRegistryTests.Run();
-            Console.WriteLine("离线回归测试通过：费用与脱敏、清单边界、项目复制移动、素材索引、会话/阶段快照、证据迁移、编辑撤销/原子版本、时间坐标、多轨模型、安全契约、能力/模型目录、账号配置、连接边界、账号可用性、模型路由、价格限制与预算账本、异步任务恢复、11 个技能注册表和离线供应商模拟。");
+            MeasurementEvidenceTests.Run();
+            await AuthorizedProbePlanTests.RunAsync(deadline.Token);
+            await MoarkAdapterCompatibilityTests.RunAsync(deadline.Token);
+            SkillExecutionContractTests.Run();
+            await ProviderSafetyRegressionTests.RunAsync(deadline.Token);
+            await ProbeProjectIntegrationTests.RunAsync(deadline.Token);
+            Console.WriteLine("离线回归测试通过：费用与脱敏、清单边界、项目复制移动、素材索引、会话/阶段快照、证据迁移、编辑撤销/原子版本、时间坐标、多轨模型、安全契约、能力/模型目录、账号配置、连接边界、账号可用性、模型路由、价格限制与预算账本、异步任务恢复、实测证据/授权探测、Moark 四类兼容、11 技能阶段执行契约及文档一致性、并发与项目授权集成。");
             return 0;
         }
         catch (Exception error)

@@ -1,5 +1,6 @@
 ---
 name: video-01-feature-audit
+version: 1.0.0
 description: Audit a software repository and its rendered pages to build evidence-backed feature, audience, workflow, and demonstration claims for an explainer video.
 ---
 
@@ -22,3 +23,7 @@ description: Audit a software repository and its rendered pages to build evidenc
 ## 阻断条件
 
 若功能没有证据、证据含未脱敏生产数据、或只能靠猜测供应商/现场状态解释，则暂停该主张并标为待确认，不进入讲稿阶段。
+
+## 阶段执行契约
+
+`video-01-feature-audit` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为许可的源码/运行页面/媒体与许可范围；前置证据为来源可追溯及隐私复核。允许 C# 工具为 `ProjectDirectory`、`ManifestValidator`、`AssetIndexer`。必需产物为 `feature-audit.json`（`features`、`evidence`、`excluded_claims`）及 `claim-disclosures.md`。主张来源、隐私安全和状态分层质量门全部通过才能推进；无更早回退阶段，暂停对应主张。

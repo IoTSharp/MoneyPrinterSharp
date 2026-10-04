@@ -11,15 +11,18 @@ public static class MoarkClient
     private const string LedgerName = ".moark-budget.json";
 
     /// <summary>执行 submit 或 poll；返回0成功、2未完成或需人工核对、3明确失败。</summary>
-    public static Task<int> RunAsync(string action, Arguments args, CancellationToken ct) => action switch
+    public static Task<int> RunAsync(string action, Arguments args, CancellationToken ct) => RunAsync(action, args, ct, MoarkClientRuntime.Default);
+
+    /// <summary>离线兼容验证可注入传输与凭据读取，不改变公开 CLI 入口。</summary>
+    internal static Task<int> RunAsync(string action, Arguments args, CancellationToken ct, MoarkClientRuntime runtime) => action switch
     {
-        "submit" => SubmitAsync(args, ct),
-        "poll" => PollAsync(args, ct),
+        "submit" => SubmitAsync(args, ct, runtime),
+        "poll" => PollAsync(args, ct, runtime),
         _ => throw new ArgumentException("moark 只支持 submit 和 poll。")
     };
 
     /// <summary>先锁记录、校验预算并预留未知状态，然后仅发送一次付费请求。</summary>
-    private static async Task<int> SubmitAsync(Arguments args, CancellationToken ct)
+    private static async Task<int> SubmitAsync(Arguments args, CancellationToken ct, MoarkClientRuntime runtime)
     {
         args.Allow("kind", "request", "record", "budget-cny", "estimate-cny", "credential-target", "download");
         var kind = args.Required("kind");
@@ -30,7 +33,6 @@ public static class MoarkClient
         var download = args.Has("download") ? Path.GetFullPath(args.Required("download")) : null;
         if (kind == "image" && download is null) throw new ArgumentException("同步图片必须指定 --download 本地输出路径。");
         if (kind != "image" && download is not null) throw new ArgumentException("异步任务请在 poll 命令使用 --download。");
-        if (download is not null && (File.Exists(download) || Directory.Exists(download))) throw new IOException("输出目标已存在，拒绝覆盖。");
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
         limit.CancelAfter(TimeSpan.FromSeconds(480));
         using var recordLock = await ProviderLocks.AcquireAsync(recordPath + ".lock", limit.Token);
@@ -40,19 +42,28 @@ public static class MoarkClient
         {
             var previous = ReadRecord(recordPath);
             if (previous.Fingerprint != payload.Fingerprint) throw new InvalidDataException("已有记录对应不同请求，拒绝覆盖。");
+            if (kind == "image")
+            {
+                // 同步图片不能重新查询供应商；只复用相同路径和哈希的原输出。
+                var verified = await ExistingOutputAsync(previous, download!, limit.Token);
+                Print(previous, verified ? "已有记录，复用已校验的本地图片；未重新提交。" : "已有记录但本地图片缺失；不可重新提交。");
+                return previous.Status == "success" && verified ? 0 : 2;
+            }
             Print(previous, "已有记录，未重新提交；可使用 poll 查询任务。");
-            // 图片同步接口没有任务编号；只有本地输出存在且哈希已记录才算完成。
-            return previous.Status == "success" && (kind != "image" || previous.LocalOutput is not null && previous.OutputSha256 is not null && File.Exists(previous.LocalOutput)) ? 0 : 2;
+            return previous.Status == "success" ? 0 : 2;
         }
-        var credential = CredentialStore.Read(args.Optional("credential-target") ?? CredentialStore.DefaultTarget);
+        // 只有新提交才要求空目标；旧图片必须先按原记录核验归属和哈希。
+        if (download is not null && (File.Exists(download) || Directory.Exists(download))) throw new IOException("输出目标已存在，拒绝覆盖。");
+        var credential = runtime.ReadCredential(args.Optional("credential-target") ?? CredentialStore.DefaultTarget);
         try
         {
             var record = new ProviderRecord { Kind = kind, Model = payload.Model, Fingerprint = payload.Fingerprint, EstimateCny = estimate };
             if (!await ReserveAsync(recordPath, record, budget, limit.Token)) return 2;
+            var adapter = new MoarkProviderAdapter(runtime.Transport, "legacy-cli", credential, record, payload);
             // 从此刻开始，崩溃、超时及取消均按可能已扣费处理，禁止自动重新 POST。
             ProviderResponse response;
-            try { response = await ProviderTransport.SubmitAsync(payload, credential, limit.Token); }
-            catch (Exception error) when (error is HttpRequestException or IOException or OperationCanceledException or JsonException or InvalidOperationException)
+            try { response = await adapter.SubmitLegacyAsync(adapter.CreateSubmitRequest(), limit.Token); }
+            catch (Exception error) when (error is HttpRequestException or IOException or OperationCanceledException or TimeoutException or JsonException or InvalidOperationException)
             {
                 record.Status = "unknown";
                 record.ErrorCode = ct.IsCancellationRequested ? "submission_cancelled_unknown" : "submission_outcome_unknown";
@@ -62,7 +73,6 @@ public static class MoarkClient
             }
             using (response)
             {
-                ProviderResponsePolicy.ApplySubmission(record, response, credential);
                 if (!response.IsSuccess)
                 {
                     // 4xx 为明确拒绝；5xx 或重定向仍可能已创建付费任务，继续占用预算。
@@ -83,7 +93,7 @@ public static class MoarkClient
                     await PersistAfterSubmissionAsync(recordPath, record);
                     try
                     {
-                        record.OutputSha256 = await SaveOutputAsync(data[0], download!, limit.Token);
+                        record.OutputSha256 = await SaveOutputAsync(data[0], download!, runtime.Transport, limit.Token);
                         record.LocalOutput = download;
                     }
                     catch (Exception error) when (error is IOException or HttpRequestException or OperationCanceledException or FormatException or InvalidDataException)
@@ -103,7 +113,7 @@ public static class MoarkClient
     }
 
     /// <summary>在次数与墙钟双重边界内查询已有任务，超时保留 pending 状态便于恢复。</summary>
-    private static async Task<int> PollAsync(Arguments args, CancellationToken ct)
+    private static async Task<int> PollAsync(Arguments args, CancellationToken ct, MoarkClientRuntime runtime)
     {
         args.Allow("record", "download", "credential-target", "max-attempts", "timeout-seconds", "interval-seconds");
         var path = RecordPath(args.Required("record"));
@@ -123,14 +133,15 @@ public static class MoarkClient
             return record.Status == "success" && record.LocalOutput is not null && File.Exists(record.LocalOutput) ? 0 : 2;
         }
         if (record.TaskId is null) { Print(record, "记录没有任务编号，需要在供应商控制台核对；不可重新提交。"); return 2; }
-        var credential = CredentialStore.Read(args.Optional("credential-target") ?? CredentialStore.DefaultTarget);
+        var credential = runtime.ReadCredential(args.Optional("credential-target") ?? CredentialStore.DefaultTarget);
         try
         {
+            var adapter = new MoarkProviderAdapter(runtime.Transport, "legacy-cli", credential, record);
+            var query = new ProviderAdapterTaskQuery("legacy-cli", record.TaskId);
             for (var index = 0; index < attempts; index++)
             {
                 deadline.Token.ThrowIfCancellationRequested();
-                using var response = await ProviderTransport.GetTaskAsync(record.TaskId, credential, false, deadline.Token);
-                ProviderResponsePolicy.ApplyPoll(record, response, credential);
+                using var response = await adapter.QueryLegacyAsync(query, false, deadline.Token);
                 if (!response.IsSuccess)
                 {
                     await PersistAfterSubmissionAsync(path, record);
@@ -149,11 +160,11 @@ public static class MoarkClient
                         if (output.TryGetProperty("output", out var nested)) output = nested;
                         if (record.Kind == "voice" && FindOutputUrl(output) is null)
                         {
-                            using var result = await ProviderTransport.GetTaskAsync(record.TaskId, credential, true, deadline.Token);
+                            using var result = await adapter.QueryLegacyAsync(query, true, deadline.Token);
                             if (!result.IsSuccess) throw new IOException("成功配音任务的输出查询失败。");
-                            record.OutputSha256 = await SaveOutputAsync(result.Document.RootElement, download, deadline.Token);
+                            record.OutputSha256 = await SaveOutputAsync(result.Document.RootElement, download, runtime.Transport, deadline.Token);
                         }
-                        else record.OutputSha256 = await SaveOutputAsync(output, download, deadline.Token);
+                        else record.OutputSha256 = await SaveOutputAsync(output, download, runtime.Transport, deadline.Token);
                         record.LocalOutput = download;
                         await PersistAsync(path, record, deadline.Token);
                     }
@@ -168,7 +179,7 @@ public static class MoarkClient
             Print(record, "已达到查询次数上限；再次 poll 可恢复，不要重复 submit。");
             return 2;
         }
-        catch (OperationCanceledException)
+        catch (Exception error) when (error is OperationCanceledException or TimeoutException)
         {
             record.ErrorCode = ct.IsCancellationRequested ? "poll_cancelled" : "poll_timeout";
             await PersistAfterSubmissionAsync(path, record);
@@ -275,7 +286,7 @@ public static class MoarkClient
     /// <summary>防止手工损坏记录参与预算或输出未经校验的供应商字段。</summary>
     private static void ValidateRecord(ProviderRecord record)
     {
-        var expected = record.Kind switch { "image" => "qwen-image-2.0-pro", "voice" => "Qwen3-TTS", "motion" => "ViduQ2-Turbo", "lipsync" => "Duix-Avatar", _ => null };
+        var expected = record.Kind is "image" or "voice" or "motion" or "lipsync" ? MoarkRequestContract.ForKind(record.Kind).Model : null;
         if (record.Version != 1 || record.Provider != "moark" || expected is null || record.Model != expected ||
             record.Fingerprint.Length != 64 || record.Fingerprint.Any(c => !char.IsAsciiHexDigit(c)) ||
             record.Status is not ("unknown" or "accepted" or "pending" or "success" or "failure" or "rejected" or "cancelled") ||
@@ -284,7 +295,7 @@ public static class MoarkClient
         if (record.TaskId is not null) ProviderTransport.ValidateTaskId(record.TaskId);
     }
 
-    /// <summary>只按已经实测的输出结构取首个媒体地址，不递归遍历任意供应商字段。</summary>
+    /// <summary>只按仓库已有输出兼容结构取首个媒体地址，不递归遍历任意供应商字段。</summary>
     private static string? FindOutputUrl(JsonElement output)
     {
         var direct = Text(output, "file_url") ?? Text(output, "url");
@@ -301,17 +312,18 @@ public static class MoarkClient
     }
 
     /// <summary>按 Base64 图片或新查询得到的签名地址下载，不保存签名地址。</summary>
-    private static Task<string> SaveOutputAsync(JsonElement output, string destination, CancellationToken ct)
+    private static Task<string> SaveOutputAsync(JsonElement output, string destination, IMoarkTransport transport, CancellationToken ct)
     {
         var encoded = Text(output, "b64_json");
-        if (encoded is not null) return ProviderTransport.SaveBase64Async(encoded, destination, ct);
+        if (encoded is not null) return transport.SaveBase64Async(encoded, destination, ct);
         var url = FindOutputUrl(output) ?? throw new InvalidDataException("成功响应没有可识别的媒体输出。");
-        return ProviderTransport.DownloadAsync(url, destination, ct);
+        return transport.DownloadAsync(url, destination, ct);
     }
 
     /// <summary>重复下载时只复用记录中路径与 SHA-256 都匹配的本地文件。</summary>
     private static async Task<bool> ExistingOutputAsync(ProviderRecord record, string path, CancellationToken ct)
     {
+        if (Directory.Exists(path)) throw new IOException("下载目标为已有目录，拒绝覆盖。");
         if (!File.Exists(path)) return false;
         if (record.LocalOutput is null || !string.Equals(Path.GetFullPath(record.LocalOutput), path, StringComparison.OrdinalIgnoreCase) || record.OutputSha256 is null)
             throw new IOException("下载目标存在但不属于当前已校验输出，拒绝覆盖。");

@@ -1,5 +1,6 @@
 ---
 name: video-09-quality-review
+version: 1.0.0
 description: Review a software explainer video for decodability, readable UI, narrative evidence, presenter consistency, audio quality, lip-sync provenance, and required disclosures.
 ---
 
@@ -22,3 +23,7 @@ description: Review a software explainer video for decodability, readable UI, na
 ## 阻断条件
 
 见共享质量门：无法解码、黑帧、缺音轨、明显口型错配、关键界面被遮挡、无证据主张、未披露备用素材、费用重复或凭据泄露均不得标记通过。
+
+## 阶段执行契约
+
+`video-09-quality-review` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为成片和证据/披露清单；前置证据为实际探测/解码及人工复核。允许 C# 工具为 `MediaTools`、`MpsProjectDiagnostics`、`CostAccounting`。必需产物 `quality-review.json` 包含 `status`、`probe`、`decode`、`samples`、`issues`、`reviewers`，并保留 `keyframes/` 抽帧。解码、可读性和披露质量门未通过时默认回退 `video-08-composition`；每条问题应记实际责任阶段，不能把工具可运行当作成片通过。

@@ -1,5 +1,6 @@
 ---
 name: video-07-lip-sync
+version: 1.0.0
 description: Drive presenter motion and mouth movement from the exact final narration in bounded segments, preserving task provenance and synchronization evidence.
 ---
 
@@ -21,3 +22,7 @@ description: Drive presenter motion and mouth movement from the exact final narr
 ## 阻断条件
 
 任务状态未知、下载内容不可解码、输入音频不是最终版本、口型明显错位、人物/教鞭漂移，或供应商输出不支持后续透明合成时暂停。
+
+## 阶段执行契约
+
+`video-07-lip-sync` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为人物素材和最终旁白；前置证据为同一最终音频指纹和可恢复任务记录。允许 C# 工具为 `ProviderAsyncTaskCoordinator`、`IProviderAdapter`、`MediaTools`。必需产物 `lip-sync-map.json` 包含 `segments`、`audio_hashes`、`task_records`、`lip_synced`；`lip-sync-report.json` 包含 `samples`、`duration_checks`、`blockers`、`disclosures`。同一音频、有界恢复和输出解码质量门未通过时回退 `video-06-narration`；超时先查询旧任务，禁止自动重提。

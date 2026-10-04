@@ -59,7 +59,8 @@ public sealed class ProviderTaskRecoveryEntry
         ValidateFingerprint(IdempotencyKey, "幂等键");
         if (TaskId is not null) ValidateTaskId(TaskId);
         if (Price is < 0 or > 1_000_000_000m) throw new InvalidDataException("异步任务费用无效。");
-        if (Price is not null && (string.IsNullOrWhiteSpace(Currency) || Currency.Length > 16 || Currency.Any(char.IsControl)))
+        if (Price is not null && string.IsNullOrWhiteSpace(Currency) ||
+            Currency is not null && (Currency.Length is < 3 or > 16 || Currency.Any(c => !char.IsAsciiLetter(c))))
             throw new InvalidDataException("异步任务费用币种无效。");
         if (ErrorMessage is not null) ValidateSafeMessage(ErrorMessage);
     }
@@ -133,10 +134,13 @@ public sealed class ProviderTaskRecoverySnapshot
             cancellationToken.ThrowIfCancellationRequested();
             var task = Tasks[index] ?? throw new InvalidDataException("异步任务恢复项为空。");
             task.Validate(cancellationToken);
-            if (!keys.Add(task.IdempotencyKey) || task.TaskId is not null && !ids.Add(task.TaskId))
+            if (!keys.Add(task.IdempotencyKey) || task.TaskId is not null && !ids.Add(TaskKey(task)))
                 throw new InvalidDataException("异步任务恢复快照包含重复键。");
         }
     }
+
+    /// <summary>任务号只在提供商范围内唯一，不把两家同名任务混为一条。</summary>
+    internal static string TaskKey(ProviderTaskRecoveryEntry entry) => entry.ProviderId.ToLowerInvariant() + ":" + entry.TaskId;
 }
 
 /// <summary>线程安全的异步任务恢复仓库；保存前执行完整校验和数量上限检查。</summary>
@@ -166,11 +170,48 @@ public sealed class ProviderAsyncTaskRecoveryStore
         {
             if (!entries.ContainsKey(entry.IdempotencyKey) && entries.Count >= MaxTasks)
                 throw new InvalidDataException("异步任务恢复数量超过上限。");
+            if (entries.TryGetValue(entry.IdempotencyKey, out var previous)) ValidateIdentity(previous, entry);
             if (entry.TaskId is not null && entries.Values.Any(item => !string.Equals(item.IdempotencyKey, entry.IdempotencyKey, StringComparison.Ordinal) &&
+                                                                       string.Equals(item.ProviderId, entry.ProviderId, StringComparison.OrdinalIgnoreCase) &&
                                                                        string.Equals(item.TaskId, entry.TaskId, StringComparison.Ordinal)))
                 throw new InvalidDataException("异步任务号已关联其他幂等键。");
-            entries[entry.IdempotencyKey] = Clone(entry);
+            var copy = Clone(entry);
+            // 人工找回任务号后，仍在等待的旧提交不能用无号快照抹掉它。
+            if (previous?.TaskId is not null && copy.TaskId is null) copy.TaskId = previous.TaskId;
+            entries[entry.IdempotencyKey] = copy;
         }
+    }
+
+    /// <summary>原子登记提交意图；多个协调器共用仓库时只有登记成功者允许调用提交。</summary>
+    public bool TryRegister(ProviderTaskRecoveryEntry intent, out ProviderTaskRecoveryEntry entry,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(intent);
+        intent.Validate(cancellationToken);
+        lock (gate)
+        {
+            if (entries.TryGetValue(intent.IdempotencyKey, out var previous))
+            {
+                ValidateIdentity(previous, intent);
+                entry = Clone(previous);
+                return false;
+            }
+            if (intent.TaskId is not null) throw new InvalidDataException("新提交意图不能预先带供应商任务号。");
+            if (entries.Count >= MaxTasks) throw new InvalidDataException("异步任务恢复数量超过上限。");
+            entries.Add(intent.IdempotencyKey, Clone(intent));
+            entry = Clone(intent);
+            return true;
+        }
+    }
+
+    /// <summary>显式幂等键不能复用到不同账号、模型或输入，已有供应商任务号也不能替换。</summary>
+    private static void ValidateIdentity(ProviderTaskRecoveryEntry previous, ProviderTaskRecoveryEntry next)
+    {
+        if (!string.Equals(previous.ProviderId, next.ProviderId, StringComparison.OrdinalIgnoreCase) ||
+            previous.AccountAlias != next.AccountAlias || previous.ModelId != next.ModelId ||
+            previous.Capability != next.Capability || previous.InputFingerprint != next.InputFingerprint ||
+            previous.TaskId is not null && next.TaskId is not null && previous.TaskId != next.TaskId)
+            throw new InvalidDataException("幂等键对应的请求身份或既有任务号不一致。");
     }
 
     /// <summary>把人工或供应商查询得到的旧任务号附加到已有幂等记录。</summary>
@@ -270,7 +311,7 @@ public sealed class ProviderAsyncTaskRecoveryStore
         return Reopen(snapshot, cancellationToken);
     }
 
-    private static ProviderTaskRecoveryEntry Clone(ProviderTaskRecoveryEntry value) => new()
+    internal static ProviderTaskRecoveryEntry Clone(ProviderTaskRecoveryEntry value) => new()
     {
         SchemaVersion = value.SchemaVersion,
         ProviderId = value.ProviderId,
@@ -342,8 +383,11 @@ public sealed class ProviderAsyncTaskCoordinator
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
+        ProviderAdapterValidation.Validate(request, cancellationToken);
         var key = request.IdempotencyKey ?? BuildIdempotencyKey(providerId, request);
-        var existing = recovery.Find(key, cancellationToken);
+        var intent = ProviderTaskRecoveryEntry.FromRequest(providerId, request, key);
+        var registered = recovery.TryRegister(intent, out var entry, cancellationToken);
+        var existing = registered ? null : entry;
         // 没有任务号的既有记录也可能已产生费用，必须找回旧任务而不能盲目重发。
         if (existing is not null && existing.TaskId is null)
             return new ProviderAsyncTaskResult(existing, false, true, true);
@@ -357,15 +401,20 @@ public sealed class ProviderAsyncTaskCoordinator
             return new ProviderAsyncTaskResult(queried, false, true);
         }
 
-        var entry = existing ?? ProviderTaskRecoveryEntry.FromRequest(providerId, request, key);
-        // 先登记提交意图；提交期间中止或关闭后仍能阻止重复付费。
-        recovery.Upsert(entry, cancellationToken);
+        // 原子登记已完成；提交期间中止或关闭后仍能阻止重复付费。
         try
         {
             var result = await ExecuteOperationAsync(token => submission.SubmitAsync(request with { IdempotencyKey = key }, token),
                 cancellationToken).ConfigureAwait(false);
-            ApplySubmission(entry, result);
-            recovery.Upsert(entry);
+            var candidate = ProviderAsyncTaskRecoveryStore.Clone(entry);
+            // 有效任务号先保存；费用或状态格式错误时仍可查询原任务，绝不重发。
+            ProviderAdapterValidation.ValidateTaskId(result.TaskId);
+            candidate.TaskId = result.TaskId;
+            recovery.Upsert(candidate);
+            ApplySubmission(candidate, result);
+            candidate.Validate();
+            recovery.Upsert(candidate);
+            entry = candidate;
             cancellationToken.ThrowIfCancellationRequested();
             return new ProviderAsyncTaskResult(entry, true, false);
         }
@@ -378,6 +427,11 @@ public sealed class ProviderAsyncTaskCoordinator
         {
             return new ProviderAsyncTaskResult(MarkUnknown(entry, ProviderAdapterErrorCategory.Timeout,
                 "提交超时，重开时必须先查询旧任务。"), false, false, true);
+        }
+        catch (InvalidDataException)
+        {
+            return new ProviderAsyncTaskResult(MarkUnknown(entry, ProviderAdapterErrorCategory.ResponseFormat,
+                "提交结果无法安全识别，恢复时必须先查询旧任务。"), false, false, true);
         }
     }
 
@@ -429,6 +483,8 @@ public sealed class ProviderAsyncTaskCoordinator
         {
             var result = await ExecuteOperationAsync(token => status.CancelAsync(new ProviderAdapterTaskQuery(entry.AccountAlias, entry.TaskId), token),
                 cancellationToken).ConfigureAwait(false);
+            if (result.TaskId != entry.TaskId || !Enum.IsDefined(result.Status) || !Enum.IsDefined(result.ErrorCategory))
+                throw new InvalidDataException("取消响应与既有任务不一致。");
             entry.Status = result.Status;
             entry.ErrorCategory = result.ErrorCategory;
             entry.UpdatedUtc = DateTimeOffset.UtcNow;
@@ -445,6 +501,11 @@ public sealed class ProviderAsyncTaskCoordinator
         {
             return new ProviderAsyncTaskResult(MarkUnknown(entry, ProviderAdapterErrorCategory.Timeout,
                 "取消请求超时，恢复时先查询旧任务。"), false, true, true);
+        }
+        catch (InvalidDataException)
+        {
+            return new ProviderAsyncTaskResult(MarkUnknown(entry, ProviderAdapterErrorCategory.ResponseFormat,
+                "取消结果无法安全识别，恢复时先查询旧任务。"), false, true, true);
         }
     }
 
@@ -465,16 +526,20 @@ public sealed class ProviderAsyncTaskCoordinator
         {
             var state = await ExecuteOperationAsync(token => status.GetStatusAsync(new ProviderAdapterTaskQuery(entry.AccountAlias, entry.TaskId!), token),
                 cancellationToken).ConfigureAwait(false);
-            entry.Status = state.Status;
-            entry.PollCount = Math.Min(entry.PollCount + 1, 100_000);
-            entry.Price = state.Price;
-            entry.Currency = state.Currency;
-            entry.ErrorCategory = state.ErrorCategory;
-            entry.ErrorMessage = ToSafeMessage(state.Status, state.ErrorCategory);
-            entry.UpdatedUtc = DateTimeOffset.UtcNow;
-            recovery.Upsert(entry);
+            if (state.TaskId != entry.TaskId || !Enum.IsDefined(state.Status) || !Enum.IsDefined(state.ErrorCategory))
+                throw new InvalidDataException("查询响应与既有任务不一致。");
+            var candidate = ProviderAsyncTaskRecoveryStore.Clone(entry);
+            candidate.Status = state.Status;
+            candidate.PollCount = Math.Min(entry.PollCount + 1, 100_000);
+            candidate.Price = state.Price;
+            candidate.Currency = state.Currency;
+            candidate.ErrorCategory = state.ErrorCategory;
+            candidate.ErrorMessage = ToSafeMessage(state.Status, state.ErrorCategory);
+            candidate.UpdatedUtc = DateTimeOffset.UtcNow;
+            candidate.Validate();
+            recovery.Upsert(candidate);
             cancellationToken.ThrowIfCancellationRequested();
-            return entry;
+            return candidate;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -484,6 +549,10 @@ public sealed class ProviderAsyncTaskCoordinator
         catch (Exception error) when (error is TimeoutException or OperationCanceledException)
         {
             return MarkUnknown(entry, ProviderAdapterErrorCategory.Timeout, "任务状态查询超时，需稍后恢复查询。");
+        }
+        catch (InvalidDataException)
+        {
+            return MarkUnknown(entry, ProviderAdapterErrorCategory.ResponseFormat, "查询结果无法安全识别，需恢复查询旧任务。");
         }
     }
 
@@ -512,6 +581,8 @@ public sealed class ProviderAsyncTaskCoordinator
     /// <summary>不使用已取消的令牌保存未知状态，保证可能发生过的提交仍可恢复。</summary>
     private ProviderTaskRecoveryEntry MarkUnknown(ProviderTaskRecoveryEntry entry, ProviderAdapterErrorCategory category, string message)
     {
+        // 仅改变最新且通过校验的快照，拒绝响应不能污染费用或覆盖人工找回的任务号。
+        entry = recovery.Find(entry.IdempotencyKey) ?? ProviderAsyncTaskRecoveryStore.Clone(entry);
         entry.Status = ProviderAdapterTaskStatus.Unknown;
         entry.ErrorCategory = category;
         entry.ErrorMessage = message;
@@ -522,7 +593,10 @@ public sealed class ProviderAsyncTaskCoordinator
 
     private static void ApplySubmission(ProviderTaskRecoveryEntry entry, ProviderAdapterSubmission result)
     {
-        if (string.IsNullOrWhiteSpace(result.TaskId)) throw new InvalidDataException("供应商返回空任务号。");
+        ProviderAdapterValidation.ValidateTaskId(result.TaskId);
+        if (!Enum.IsDefined(result.Status) || result.Price is < 0 or > 1_000_000_000m ||
+            result.Price is not null && string.IsNullOrWhiteSpace(result.Currency))
+            throw new InvalidDataException("供应商提交结果无效。");
         entry.TaskId = result.TaskId;
         entry.Status = result.Status;
         entry.Price = result.Price;

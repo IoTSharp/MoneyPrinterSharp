@@ -69,8 +69,8 @@ public sealed class MpsPriceMetadata
         if (Amount is < 0 or > 1_000_000_000m) throw new InvalidDataException("价格金额超出范围。");
         if (Currency is not null && !ValidText(Currency, 16)) throw new InvalidDataException("价格币种无效。");
         if (Unit is not null && !ValidText(Unit, 64)) throw new InvalidDataException("价格单位无效。");
-        if (Basis is not null && !ValidText(Basis, 512)) throw new InvalidDataException("价格依据无效。");
-        if (Source is not null && !ValidText(Source, 2048)) throw new InvalidDataException("价格来源无效。");
+        if (Basis is not null && (!ValidText(Basis, 512) || SensitiveText(Basis))) throw new InvalidDataException("价格依据无效或包含敏感字段。");
+        if (Source is not null && (!ValidText(Source, 2048) || SensitiveText(Source))) throw new InvalidDataException("价格来源无效或包含敏感字段。");
         if (Status == MpsPriceStatus.Unknown && Amount is not null)
             throw new InvalidDataException("未知价格不能携带看似已知的金额。");
         if (Status is MpsPriceStatus.Estimated or MpsPriceStatus.Confirmed && !IsComplete)
@@ -80,6 +80,13 @@ public sealed class MpsPriceMetadata
     }
 
     private static bool ValidText(string value, int max) => value.Length <= max && !value.Any(char.IsControl);
+
+    /// <summary>来源允许公开文档地址，拒绝认证字段及签名/查询地址进入预算快照。</summary>
+    private static bool SensitiveText(string value) => value.Contains("bearer ", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("authorization", StringComparison.OrdinalIgnoreCase) || value.Contains("api_key", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("token=", StringComparison.OrdinalIgnoreCase) || value.Contains("secret=", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("signature=", StringComparison.OrdinalIgnoreCase) || value.Contains("sig=", StringComparison.OrdinalIgnoreCase) ||
+        Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Query.Length > 0 || uri.UserInfo.Length > 0);
 }
 
 /// <summary>模型或能力的统一限制元数据；null 表示供应商尚未给出事实。</summary>
@@ -174,6 +181,7 @@ public sealed class MpsBudgetLedger
     private const int MaxEntries = 20_000;
     private readonly object gate = new();
     private readonly Dictionary<string, MpsBudgetLedgerEntry> entries = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> taskBindings = new(StringComparer.Ordinal);
     private decimal limit;
 
     public MpsBudgetLedger(decimal limit, string currency = "CNY")
@@ -216,14 +224,14 @@ public sealed class MpsBudgetLedger
         ValidatePrice(price);
         lock (gate)
         {
-            var key = StableKey(providerId, taskId);
+            EnsureCurrency(price);
+            var key = ResolveKey(providerId, taskId);
             if (entries.TryGetValue(key, out var existing))
             {
                 if (existing.State == MpsBudgetLineState.Reserved && existing.Amount == amount) return existing;
                 throw new InvalidOperationException("同一提供商任务已经记账，不能使用不同金额重复预留。");
             }
             EnsureCapacity();
-            EnsureCurrency(price);
             EnsureAvailable(amount);
             var line = new MpsBudgetLedgerEntry(providerId.Trim(), taskId.Trim(), Currency, amount,
                 MpsBudgetLineState.Reserved, price ?? MpsPriceMetadata.Estimate(amount, Currency, "request", "budget-reservation"),
@@ -243,7 +251,7 @@ public sealed class MpsBudgetLedger
         ValidatePriceState(price, MpsPriceStatus.Confirmed);
         lock (gate)
         {
-            var key = StableKey(providerId, taskId);
+            var key = ResolveKey(providerId, taskId);
             if (!entries.TryGetValue(key, out var existing)) throw new KeyNotFoundException("待确认任务不存在。");
             EnsureCurrency(price);
             if (existing.State == MpsBudgetLineState.Confirmed && existing.Amount == amount) return existing;
@@ -277,13 +285,15 @@ public sealed class MpsBudgetLedger
         ValidatePriceState(price, MpsPriceStatus.Unknown);
         lock (gate)
         {
-            var key = StableKey(providerId, taskId);
+            var key = ResolveKey(providerId, taskId);
             if (!entries.TryGetValue(key, out var existing)) throw new KeyNotFoundException("待标记任务不存在。");
             if (existing.State == MpsBudgetLineState.Unknown && (estimate is null || existing.Amount == estimate)) return existing;
-            if (existing.State != MpsBudgetLineState.Reserved)
-                throw new InvalidOperationException("只有预留中的任务才能标记未知费用。");
+            if (existing.State is not (MpsBudgetLineState.Reserved or MpsBudgetLineState.Unknown))
+                throw new InvalidOperationException("只有预留或未知任务才能标记未知费用。");
             var amount = estimate ?? existing.Amount;
             ValidateAmount(amount);
+            if (existing.State == MpsBudgetLineState.Unknown && amount < existing.Amount)
+                throw new InvalidOperationException("未知费用占用不能未经确认而减少。");
             EnsureCurrency(price);
             var unknown = existing with
             {
@@ -310,7 +320,7 @@ public sealed class MpsBudgetLedger
         ValidateKey(providerId, taskId);
         lock (gate)
         {
-            var key = StableKey(providerId, taskId);
+            var key = ResolveKey(providerId, taskId);
             if (!entries.TryGetValue(key, out var existing)) throw new KeyNotFoundException("待释放任务不存在。");
             if (existing.State == MpsBudgetLineState.Released) return existing;
             if (existing.State != MpsBudgetLineState.Reserved)
@@ -332,7 +342,7 @@ public sealed class MpsBudgetLedger
         lock (gate)
         {
             EnsureCurrency(price);
-            var key = StableKey(providerId, taskId);
+            var key = ResolveKey(providerId, taskId);
             if (!entries.TryGetValue(key, out var existing))
             {
                 EnsureCapacity();
@@ -368,6 +378,43 @@ public sealed class MpsBudgetLedger
             .ToArray();
     }
 
+    /// <summary>收到稳定任务号后原子绑定调用前的预留意图，避免释放/重建之间被并发占用。</summary>
+    public MpsBudgetLedgerEntry BindTaskId(string providerId, string provisionalTaskId, string providerTaskId)
+    {
+        ValidateKey(providerId, provisionalTaskId);
+        ValidateKey(providerId, providerTaskId);
+        lock (gate)
+        {
+            var originalKey = StableKey(providerId, provisionalTaskId);
+            var targetKey = StableKey(providerId, providerTaskId);
+            if (taskBindings.TryGetValue(originalKey, out var boundKey))
+            {
+                if (boundKey != targetKey) throw new InvalidOperationException("预留意图已绑定其他供应商任务号。");
+                return entries[boundKey];
+            }
+            if (!entries.TryGetValue(originalKey, out var existing)) throw new KeyNotFoundException("待绑定预留意图不存在。");
+            if (originalKey == targetKey) return existing;
+            if (taskBindings.ContainsValue(originalKey)) throw new InvalidOperationException("已绑定的供应商任务号不能再次替换。");
+            if (existing.State is not (MpsBudgetLineState.Reserved or MpsBudgetLineState.Unknown))
+                throw new InvalidOperationException("只有预留或未知费用意图可以绑定任务号。");
+            if (entries.ContainsKey(targetKey) || taskBindings.ContainsKey(targetKey))
+                throw new InvalidOperationException("供应商任务号已关联其他预算行，需核对而不能重复记账。");
+            if (taskBindings.Count >= MaxEntries) throw new InvalidOperationException("预算任务绑定超过上限。");
+            var bound = existing with { TaskId = providerTaskId.Trim() };
+            entries.Remove(originalKey);
+            entries.Add(targetKey, bound);
+            taskBindings.Add(originalKey, targetKey);
+            return bound;
+        }
+    }
+
+    /// <summary>旧意图引用仍指向同一预算行；不形成无界别名链。</summary>
+    private string ResolveKey(string providerId, string taskId)
+    {
+        var key = StableKey(providerId, taskId);
+        return taskBindings.TryGetValue(key, out var bound) ? bound : key;
+    }
+
     /// <summary>构造大小受限的稳定去重键。</summary>
     public static string StableKey(string providerId, string taskId)
     {
@@ -401,6 +448,8 @@ public sealed class MpsBudgetLedger
         if (string.IsNullOrWhiteSpace(providerId) || providerId.Length > 128 || providerId.Any(char.IsControl) ||
             string.IsNullOrWhiteSpace(taskId) || taskId.Length > 256 || taskId.Any(char.IsControl))
             throw new ArgumentException("提供商或任务标识无效。");
+        ProviderAccountConfiguration.ValidateProviderId(providerId.Trim());
+        ProviderAdapterValidation.ValidateTaskId(taskId.Trim());
     }
 
     private static void ValidateAmount(decimal amount)

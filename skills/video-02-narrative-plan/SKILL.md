@@ -1,5 +1,6 @@
 ---
 name: video-02-narrative-plan
+version: 1.0.0
 description: Turn an audited software feature set into an audience-specific explainer narrative with a practical chapter order, scope, and risk-aware wording.
 ---
 
@@ -22,3 +23,7 @@ description: Turn an audited software feature set into an audience-specific expl
 ## 阻断条件
 
 如果叙事需要未审计功能、需要把截图状态说成实时生产事实，或五分钟目标只能依赖不自然的高速播读，退回功能审计或压缩范围。
+
+## 阶段执行契约
+
+`video-02-narrative-plan` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为功能审计、受众/目标与时长预算；前置证据为审计通过和时长预算。允许 C# 工具为 `MpsProductionPlan`、`ProjectDirectory`。必需产物 `narrative-plan.json` 包含 `audience`、`goal`、`chapters`、`cut_priority`、`disclosures`。单一受众、证据引用和自然时长质量门未通过时回退 `video-01-feature-audit`。

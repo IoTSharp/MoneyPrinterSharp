@@ -1,5 +1,6 @@
 ---
 name: video-04-model-selection
+version: 1.0.0
 description: Compare image, presenter-motion, TTS, lip-sync, and compositing providers using verified capability, input, duration, privacy, cost, and failure evidence.
 ---
 
@@ -30,3 +31,7 @@ description: Compare image, presenter-motion, TTS, lip-sync, and compositing pro
 ## 阻断条件
 
 若目标能力只有营销描述、输入限制不满足、费用无法估算到预算，或供应商不能提供可核验的任务状态，则保持未选定。
+
+## 阶段执行契约
+
+`video-04-model-selection` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为冻结讲稿与提供商目录/账号事实；前置证据为能力证据和项目授权预算。允许 C# 工具为 `ModelCatalogCache`、`ProviderModelRouter`、`MpsBudgetLedger`。必需产物 `model-matrix.json` 包含 `models`、`capability_evidence`、`sources`、`observed_utc`、`selection`、`budget`。能力证据、已知预算和锁定模型质量门未通过时回退 `video-03-screenplay` 或保持等待；工具许可本身不会授权付费请求。

@@ -1,5 +1,6 @@
 ---
 name: video-05-presenter
+version: 1.0.0
 description: Plan and validate a consistent adult presenter asset with a teaching pointer, clean green-screen background, and compositing-safe poses for software explainers.
 ---
 
@@ -21,3 +22,7 @@ description: Plan and validate a consistent adult presenter asset with a teachin
 ## 阻断条件
 
 没有稳定人物身份、背景不是可验证纯绿、教鞭断裂/多支、手部异常、或素材含第三方未经授权肖像时，不进入口型或合成。
+
+## 阶段执行契约
+
+`video-05-presenter` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为人物说明和模型矩阵；前置证据为肖像授权与绿幕样帧。允许 C# 工具为 `AssetIndexer`、`MediaTools`、`ProviderAsyncTaskCoordinator`。必需产物 `presenter-manifest.json` 包含 `identity`、`assets`、`source`、`authorization`、`samples`，并保留可验证透明人物 `presenter-alpha.webm`。身份稳定、alpha 可验证和来源授权质量门未通过时回退 `video-04-model-selection`。

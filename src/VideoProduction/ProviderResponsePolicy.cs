@@ -35,11 +35,20 @@ internal static class ProviderResponsePolicy
             record.ErrorCode = "poll_http_" + response.StatusCode.ToString(CultureInfo.InvariantCulture);
             return;
         }
+        ValidateTaskIdentity(record, response, credential);
+        ApplyPrice(record, response.Document.RootElement, response.InferenceCost);
+        record.Status = NormalizeStatus(response.Document.RootElement) ?? "unknown";
+        record.ErrorCode = record.Status == "failure" ? "provider_task_failed" : null;
+    }
+
+    /// <summary>状态与输出查询都核对原任务号；错误不回显供应商原始字段。</summary>
+    internal static void ValidateTaskIdentity(ProviderRecord record, ProviderResponse response, string credential)
+    {
         var returnedId = SafeTaskId(response.Document.RootElement, credential);
         if (returnedId is not null && returnedId != record.TaskId) throw new InvalidDataException("任务查询响应编号不匹配。");
-        ApplyPrice(record, response.Document.RootElement, response.InferenceCost);
-        record.Status = NormalizeStatus(response.Document.RootElement) ?? "pending";
-        record.ErrorCode = record.Status == "failure" ? "provider_task_failed" : null;
+        if (response.Document.RootElement.ValueKind == JsonValueKind.Object &&
+            response.Document.RootElement.TryGetProperty("task_id", out _) && returnedId is null)
+            throw new InvalidDataException("任务查询响应编号无效。");
     }
 
     /// <summary>限制状态数字，防止异常适配器把任意内容作为 HTTP 诊断字段。</summary>

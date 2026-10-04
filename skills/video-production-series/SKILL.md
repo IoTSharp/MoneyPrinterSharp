@@ -1,5 +1,6 @@
 ---
 name: video-production-series
+version: 1.0.0
 description: Orchestrate an evidence-based software explainer video from feature audit through script, presenter, narration, lip sync, composition, review, cost reconciliation, and delivery.
 ---
 
@@ -37,3 +38,7 @@ description: Orchestrate an evidence-based software explainer video from feature
 5. 完成后运行项目校验和成片验证，最后按任务号对账并交付来源、披露和已知限制。
 
 若用户只需要一个阶段，直接路由到对应技能；若请求“从头做完”或“做完整讲解视频”，由本技能维持阶段状态并逐项调用。
+
+## 阶段执行契约
+
+`video-production-series` / `1.0.0` 使用 [阶段执行契约](references/skill-execution-contract.md) 和共享核心 `MpsSkillExecutionContractSet`。输入为可重开项目及可选已有状态，前置证据为项目初始化；允许的 C# 工具为 `MpsSkillRegistry`、`MpsProductionPlan`。必需产物为 `production-plan.json`、`stage-status.json`，登记阶段状态、产物、阻断和恢复信息。固定注册表、可恢复性和无秘密质量门未通过时不得推进。总入口没有更早回退阶段，应暂停并路由到责任技能。

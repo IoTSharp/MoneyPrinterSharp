@@ -23,28 +23,29 @@ internal sealed class ProviderRequest : IDisposable
         path = Path.GetFullPath(path);
         var source = JsonFiles.Read<JsonElement>(path);
         if (source.ValueKind != JsonValueKind.Object) throw new InvalidDataException("请求必须是 JSON 对象。");
-        var (model, endpoint, allowed) = kind switch
+        var contract = MoarkRequestContract.ForKind(kind);
+        var allowed = kind switch
         {
-            "image" => ("qwen-image-2.0-pro", "/images/generations", new[] { "model", "prompt", "size", "n", "response_format" }),
-            "voice" => ("Qwen3-TTS", "/async/audio/speech", new[] { "model", "output_format", "inputs" }),
-            "motion" => ("ViduQ2-Turbo", "/async/videos/generations", new[] { "model", "prompt", "resolution", "duration", "seed", "first_frame" }),
-            "lipsync" => ("Duix-Avatar", "/async/videos/audio-video-to-video", new[] { "model", "ref_video", "ref_audio" }),
+            "image" => new[] { "model", "prompt", "size", "n", "response_format" },
+            "voice" => new[] { "model", "output_format", "inputs" },
+            "motion" => new[] { "model", "prompt", "resolution", "duration", "seed", "first_frame" },
+            "lipsync" => new[] { "model", "ref_video", "ref_audio" },
             _ => throw new ArgumentException("kind 只支持 image、voice、motion、lipsync。")
         };
-        var request = new ProviderRequest { Kind = kind, Model = model, Endpoint = endpoint };
+        var request = new ProviderRequest { Kind = kind, Model = contract.Model, Endpoint = contract.Endpoint };
         try
         {
             ValidateKeys(source, allowed);
             var payload = JsonNode.Parse(source.GetRawText(), documentOptions: new JsonDocumentOptions { MaxDepth = 16 })!.AsObject();
-            if (payload["model"] is not null && payload["model"]!.GetValue<string>() != model)
+            if (payload["model"] is not null && payload["model"]!.GetValue<string>() != contract.Model)
                 throw new InvalidDataException("模型与用途分类不匹配。");
-            payload["model"] = model;
+            payload["model"] = contract.Model;
             ValidatePayload(kind, payload);
             if (kind == "lipsync")
             {
                 var multipart = new MultipartFormDataContent();
                 request.Content = multipart;
-                multipart.Add(new StringContent(model), "model");
+                multipart.Add(new StringContent(contract.Model), "model");
                 // 哈希时锁住文件，并使用同一句柄上传，避免校验后文件被替换。
                 foreach (var field in new[] { "ref_video", "ref_audio" })
                 {
@@ -121,7 +122,7 @@ internal sealed class ProviderRequest : IDisposable
                 throw new InvalidDataException("请求包含重复或不支持的字段。");
     }
 
-    /// <summary>校验已实测的模型契约；一次请求只生成一个可追踪的输出。</summary>
+    /// <summary>校验仓库已有的本地兼容契约；不据此声明当前账号或生产接口可用。</summary>
     private static void ValidatePayload(string kind, JsonObject payload)
     {
         if (kind == "image")

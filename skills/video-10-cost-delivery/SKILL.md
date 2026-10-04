@@ -1,5 +1,6 @@
 ---
 name: video-10-cost-delivery
+version: 1.0.0
 description: Reconcile media-generation costs by task ID, preserve provider disclosures and checksums, and assemble a reproducible software-video delivery package.
 ---
 
@@ -21,3 +22,7 @@ description: Reconcile media-generation costs by task ID, preserve provider disc
 ## 阻断条件
 
 任务号重复且无法判断包含关系、币种被错误相加、文件校验失败、缺少来源披露、或交付包含有秘密/生产数据时停止交付。
+
+## 阶段执行契约
+
+`video-10-cost-delivery` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为质量报告、任务账本和交付文件；前置证据为任务去重及文件校验和。允许 C# 工具为 `MpsBudgetLedger`、`CostAccounting`、`ProjectDirectory`。必需产物 `cost-report.json` 包含 `tasks`、`currencies`、`estimated`、`confirmed`、`unknown`、`disclosures`；`delivery-manifest.json` 包含 `files`、`checksums`、`sources`、`disclosures`、`versions`、`reproduce`，并保留 `delivery/`。费用去重、币种分离和无秘密质量门未通过时回退 `video-09-quality-review`。

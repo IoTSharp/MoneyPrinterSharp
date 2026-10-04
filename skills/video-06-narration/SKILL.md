@@ -1,5 +1,6 @@
 ---
 name: video-06-narration
+version: 1.0.0
 description: Produce or plan segmented Chinese narration from the frozen screenplay, with measured duration, pronunciation notes, subtitles, and provider disclosure.
 ---
 
@@ -21,3 +22,7 @@ description: Produce or plan segmented Chinese narration from the frozen screenp
 ## 阻断条件
 
 服务返回模型/声音不明、音频不可解码、文本哈希不一致、明显错读或音频时长超出叙事预算而未重新规划时，不进入口型。
+
+## 阶段执行契约
+
+`video-06-narration` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为冻结讲稿和声音选择；前置证据为讲稿哈希及音频试听。允许 C# 工具为 `IProviderAdapter`、`MediaTools`、`ProjectDirectory`。必需产物 `narration-manifest.json` 包含 `script_version`、`text_hash`、`voice`、`segments`、`review`；`timings.json` 包含 `scenes`、`audio_hashes`、`measured_durations`、`subtitle_boundaries`；最终旁白为 `narration.wav`。文本一致、可解码音频和发音复核质量门未通过时回退 `video-03-screenplay`。

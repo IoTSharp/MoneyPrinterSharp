@@ -1,5 +1,6 @@
 ---
 name: video-08-composition
+version: 1.0.0
 description: Composite verified software screens, transparent presenter footage, pointer, taskbar, captions, and final audio into a readable explainer video.
 ---
 
@@ -22,3 +23,7 @@ description: Composite verified software screens, transparent presenter footage,
 ## 阻断条件
 
 alpha 丢失、界面不可读、人物遮挡关键内容、章节跳切、音画时长不一致、或中间件被误导出为普通 MP4 时不交付。
+
+## 阶段执行契约
+
+`video-08-composition` / `1.0.0` 使用 [阶段执行契约](../video-production-series/references/skill-execution-contract.md)。输入为真实屏幕、透明人物和统一时间线；前置证据为 alpha 探测及同一 scene_id 对齐。允许 C# 工具为 `MediaWorkflows`、`MediaTools`、`MpsTimelineValidation`。必需产物 `composition-manifest.json` 包含 `input_hashes`、`canvas`、`encoding`、`audio`、`subtitles`、`render_record`，并交付 `final-video.mp4` 和 `subtitles.srt`。真实屏幕、透明保持和音画对齐质量门未通过时回退 `video-07-lip-sync`，根据报告先修复实际责任输入。
